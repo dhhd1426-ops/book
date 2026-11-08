@@ -614,6 +614,46 @@ h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
   .rd-ribbon{right:max(36px,calc(50% - 370px))}
   .rd-bar.bot{padding-left:max(40px,calc(50% - 320px));padding-right:max(40px,calc(50% - 320px))}
 }
+
+/* ---------- 书库 layout v2: header / 推荐 / 我的书 ---------- */
+.lib-mast{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px 10px;align-items:center}
+.lib-tt{grid-column:1/-1;display:flex;justify-content:space-between;align-items:baseline}
+.lib-mast .search{margin-top:0}
+.imp-btn{height:44px;padding:0 16px 0 13px;border-radius:12px;background:var(--ink);color:var(--paper);display:flex;align-items:center;gap:6px;
+  font-size:13.5px;letter-spacing:.16em;cursor:pointer;transition:transform .25s}
+.imp-btn:active{transform:scale(.96)}
+.imp-btn:focus-within{outline:1.5px solid var(--accent);outline-offset:2px}
+.lib-body{gap:30px;margin-top:22px}
+.sec-h{display:flex;align-items:flex-end}
+.recs-t b{font-size:17px}
+.mine{display:flex;flex-direction:column;gap:14px}
+.mine-f{display:flex;flex-direction:column;gap:12px}
+.mine-f .lib-tabs{margin-top:0}
+.grid{margin-top:4px}
+/* featured pick leads the recommendation row */
+.recs-row{align-items:flex-start;-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent)}
+.rec.feat{flex:0 0 min(300px,82%);flex-direction:row;gap:14px;padding:12px;background:var(--sheet);box-shadow:0 0 0 1px var(--edge)}
+.rec.feat .rc{width:96px;flex-shrink:0;align-self:flex-start}
+.rec.feat .fi{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;padding-top:2px}
+.rec.feat .kick{font-family:var(--f-mono);font-size:9px;letter-spacing:.24em;color:var(--accent)}
+.rec.feat .rt{margin-top:2px;font-size:17px;font-weight:500;letter-spacing:.12em;white-space:normal}
+.rec.feat .rd{font-size:12px;line-height:1.65;color:var(--ink-2);letter-spacing:.04em;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.rec.feat .rs{margin-top:auto;padding-top:6px}
+.rec.feat.sk .fi i{display:block;height:11px;border-radius:3px;background:linear-gradient(90deg,var(--sheet-side) 25%,var(--paper) 50%,var(--sheet-side) 75%);background-size:300% 100%;animation:shimmer 1.3s ease-in-out infinite}
+@media (min-width:600px){
+  .lib-mast{grid-template-columns:auto minmax(0,1fr) minmax(220px,360px) auto;gap:16px;align-items:end}
+  .lib-tt{grid-column:1;flex-direction:column;align-items:flex-start;gap:6px}
+  .lib-mast .search{grid-column:3}
+  .lib-body{gap:40px;margin-top:30px}
+  .rec.feat{flex-basis:400px;padding:16px;gap:18px}
+  .rec.feat .rc{width:124px}
+  .rec.feat .rt{font-size:20px}
+  .rec.feat .rd{-webkit-line-clamp:4}
+  .mine-f{flex-direction:row;align-items:flex-end;gap:24px;border-bottom:1px solid var(--ink-3)}
+  .mine-f .lib-tabs{border-bottom:0;flex-shrink:0}
+  .mine-f .groups{flex:1;min-width:0;margin:0;padding:0 0 8px}
+  .mine-f .groups > :first-child{margin-left:auto}
+}
 </style>
 
 <main class="app">
@@ -668,25 +708,29 @@ h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
   </section>
 
   <section class="view scroll" data-view="library" aria-label="书库">
-    <header class="mast">
-      <div class="mast-row"><span class="word">书库</span><span class="eyebrow" id="libCount">Library</span></div>
+    <header class="mast lib-mast">
+      <div class="lib-tt"><span class="word">书库</span><span class="eyebrow" id="libCount">Library</span></div>
       <label class="search" for="libSearch">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
         <span class="sr">搜索书库</span>
         <input id="libSearch" type="search" placeholder="书名、作者" autocomplete="off">
       </label>
-      <div class="lib-tabs" id="libTabs" role="tablist" aria-label="阅读状态"></div>
+      <label class="imp-btn" for="importFile" title="导入本地书籍（TXT · EPUB）">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>导入</span>
+        <input id="importFile" type="file" accept=".txt,.epub,text/plain,application/epub+zip" multiple class="sr">
+      </label>
     </header>
     <div class="lib-body">
       <section class="recs" id="recs" aria-label="书源推荐"></section>
-      <div class="groups" id="libGroups"></div>
-      <label class="import" for="importFile">
-        <span class="plus"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span>
-        <span class="txt"><b>导入本地书籍</b><small>TXT · EPUB</small></span>
-        <input id="importFile" type="file" accept=".txt,.epub,text/plain,application/epub+zip" multiple class="sr">
-      </label>
-      <div class="grid" id="libGrid"></div>
-      <p class="empty" id="libEmpty" hidden>没有符合条件的书。换个关键词试试。</p>
+      <section class="mine" aria-label="我的书">
+        <div class="sec-h"><span class="recs-t"><b>我的书</b><small id="mineSub"></small></span></div>
+        <div class="mine-f">
+          <div class="lib-tabs" id="libTabs" role="tablist" aria-label="阅读状态"></div>
+          <div class="groups" id="libGroups"></div>
+        </div>
+        <div class="grid" id="libGrid"></div>
+        <p class="empty" id="libEmpty" hidden>没有符合条件的书。换个关键词，或点右上角「导入」添加本地书。</p>
+      </section>
     </div>
   </section>
 
@@ -1400,6 +1444,7 @@ let libState = "all", libGroup = "", libQ = "";
 function renderLibrary(animate){
   const count = k => BOOKS.filter(b => k === "all" || b.state === k).length;
   document.getElementById("libCount").textContent = `Library · ${N}`;
+  document.getElementById("mineSub").textContent = `${N} 本 · ${BOOKS.filter(b => b.state === "reading").length} 本在读`;
   document.getElementById("libTabs").innerHTML = [["all", "全部"], ["reading", "在读"], ["done", "读完"], ["want", "想读"]]
     .map(([k, l]) => `<button type="button" role="tab" aria-selected="${k === libState}" data-k="${k}">${l}<small>${count(k)}</small></button>`).join("");
   document.getElementById("libGroups").innerHTML = GROUPS.map(g => `<button class="pill" type="button" aria-pressed="${g === libGroup}" data-g="${g}">${g} · ${BOOKS.filter(b => b.group === g).length}</button>`).join("")
@@ -1791,6 +1836,9 @@ function pickRecs(){
     if (!mine.length) mine = generic.filter(r => !used.has(r.t));
     mine.slice(0, 3).forEach(r => { if (!used.has(r.t)) { used.add(r.t); out.push({ ...r, src: s.name }); } });
   });
+  // a source normally offers far more than three books: keep the row full
+  const rest = REC_POOL.filter(r => !used.has(r.t)).sort(() => Math.random() - .5);
+  for (let k = 0; out.length < 9 && k < rest.length && on.length; k++) out.push({ ...rest[k], src: on[k % on.length].name });
   return out.sort(() => Math.random() - .5).slice(0, 12);
 }
 function recHead(n){
@@ -1805,14 +1853,20 @@ function renderRecs(){
   box.hidden = false;
   if (!on) { box.innerHTML = `<div class="recs-empty"><span>还没有启用的书源，书库只显示本地书。</span><button class="txt-btn" type="button" id="recGo">去添加书源</button></div>`; return; }
   if (recSig !== srcSig()) { refreshRecs(); return; }
-  box.innerHTML = recHead(on) + `<div class="recs-row">${recItems.map((r, i) => `<button class="rec" type="button" data-rec="${i}" aria-label="${esc(r.t)}，${esc(r.a)}，来自 ${esc(r.src)}">
+  const blurb = r => `${r.a}的作品，由「${r.src}」提供，已进入公版，可直接阅读。`;
+  box.innerHTML = recHead(on) + `<div class="recs-row">${recItems.map((r, i) => i === 0
+    ? `<button class="rec feat" type="button" data-rec="0" aria-label="今日推荐：${esc(r.t)}，${esc(r.a)}">
+        <span class="rc"><img alt="" src="${recCover(r)}"></span>
+        <span class="fi"><span class="kick">今日推荐</span><span class="rt">${esc(r.t)}</span><span class="ra">${esc(r.a)}</span>
+        <span class="rd">${esc(blurb(r))}</span><span class="rs">${wanted.has(r.t) ? "✓ 已加入想读" : "＋ 加入想读"}</span></span></button>`
+    : `<button class="rec" type="button" data-rec="${i}" aria-label="${esc(r.t)}，${esc(r.a)}，来自 ${esc(r.src)}">
       <span class="rc"><img alt="" src="${recCover(r)}"></span><span class="rt">${esc(r.t)}</span><span class="ra">${esc(r.a)}</span>
-      <span class="rs">${wanted.has(r.t) ? "✓ 已加入想读" : esc(r.src)}</span></button>`).join("")}</div>`;
+      <span class="rs">${wanted.has(r.t) ? "✓ 已加入想读" : esc(hostOf(sources.find(s => s.name === r.src)?.url || "") || r.src)}</span></button>`).join("")}</div>`;
 }
 function refreshRecs(){
   const box = document.getElementById("recs"), on = sources.filter(s => s.on).length;
   recLoading = true; recSig = srcSig();
-  box.innerHTML = recHead(on) + `<div class="recs-row">${Array.from({ length: 5 }, () => `<span class="rec sk"><span class="rc"></span><span class="rt"></span><span class="ra"></span></span>`).join("")}</div>`;
+  box.innerHTML = recHead(on) + `<div class="recs-row"><span class="rec feat sk"><span class="rc"></span><span class="fi"><i style="width:40%"></i><i style="width:75%;height:16px"></i><i style="width:45%"></i><i></i><i style="width:85%"></i></span></span>${Array.from({ length: 6 }, () => `<span class="rec sk"><span class="rc"></span><span class="rt"></span><span class="ra"></span></span>`).join("")}</div>`;
   const items = pickRecs();
   setTimeout(() => {                         // "covers arrive": each one lands a beat after the last
     recItems = items; recAt = Date.now(); recLoading = false;
