@@ -191,7 +191,7 @@ h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
 .exlibris .v{font-size:13px;letter-spacing:.3em;color:var(--ink)}
 .exlibris .n{font-family:var(--f-mono);font-size:9px;letter-spacing:.16em;color:var(--accent)}
 .tp{padding:12% 11% 9%;display:flex;flex-direction:column;height:100%}
-.tp .vol{font-family:var(--f-mono);font-size:9px;letter-spacing:.24em;color:var(--ink-2)}
+.tp .tvol{font-family:var(--f-mono);font-size:9px;letter-spacing:.24em;color:var(--ink-2)}
 .tp h2{margin:14% 0 0;font-size:clamp(15px,4.6vw,19px);line-height:1.6;letter-spacing:.14em;font-weight:600;text-wrap:balance}
 .tp .by{margin-top:10px;font-size:11.5px;letter-spacing:.24em;color:var(--ink-2)}
 .tp .seal{margin-top:auto;align-self:flex-end;width:30px;height:30px;border:1.5px solid #b5452f;color:#b5452f;
@@ -761,6 +761,29 @@ h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
   .pubc{flex-basis:150px}
   .guess{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:40px}
 }
+
+/* ---------- 发现 · detail layer + 想读 buttons ---------- */
+.dveil{position:absolute;inset:0;z-index:38;background:color-mix(in oklab,var(--paper) 80%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  opacity:0;pointer-events:none;transition:opacity .45s}
+.dveil.on{opacity:1;pointer-events:auto}
+.dclose{z-index:42}
+.dclose.on{opacity:1;transform:none;pointer-events:auto}
+.dflat{z-index:40}
+.dflat .front{padding:0}
+.ddet{z-index:40;transition:opacity .3s}
+.want{height:30px;padding:0 12px;border:0;border-radius:999px;background:color-mix(in oklab,var(--accent) 12%,transparent);color:var(--accent);
+  font-family:var(--f-mono);font-size:10.5px;letter-spacing:.12em;cursor:pointer;white-space:nowrap;transition:background .3s,color .3s}
+.want[aria-pressed="true"]{background:none;box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--accent) 40%,transparent)}
+.want:focus-visible,.gopen:focus-visible,.ropen:focus-visible{outline:1.5px solid var(--accent);outline-offset:3px}
+.want.big{justify-self:center;height:36px;padding:0 18px;font-size:11.5px}
+.gs{position:relative;display:block;padding:0}
+.gopen{width:100%;display:flex;gap:14px;padding:14px 0 50px;border:0;background:none;font:inherit;color:var(--ink);text-align:left;cursor:pointer}
+.gs .want{position:absolute;left:78px;bottom:14px}
+.rec.feat{position:relative;cursor:default}
+.ropen{display:flex;gap:inherit;flex:1;min-width:0;border:0;background:none;padding:0 0 38px;font:inherit;color:var(--ink);text-align:left;cursor:pointer}
+.rec.feat .want{position:absolute;bottom:12px;left:calc(12px + 96px + 14px)}
+@media (min-width:600px){ .rec.feat .want{bottom:16px;left:calc(16px + 124px + 18px)} }
+.rec.feat .ropen .rd{-webkit-line-clamp:3}
 </style>
 
 <main class="app">
@@ -953,6 +976,8 @@ h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
   </section>
   <div class="snack" id="snack" role="status" aria-live="polite"><span class="ic"></span><span id="snackTxt"></span><button type="button" id="snackBtn">撤销</button></div>
 
+  <div class="dveil" id="dveil"></div>
+  <button class="close dclose" id="dclose" type="button" aria-label="关闭详情"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9"/></svg></button>
   <div class="veil" id="veil"></div>
   <button class="close" id="closeBtn" type="button" aria-label="放回书架">
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9"/></svg>
@@ -981,6 +1006,7 @@ const BOOKS = TITLES.map((t, i) => ({
   scene: i % 6, hue: Math.floor(rnd() * 360), s: rnd()
 }));
 const N = BOOKS.length;
+const OWN = BOOKS.slice();   /* the user's own books; 发现 books get appended to BOOKS later */
 const WHO = ["转学生","图书管理员","便利店店员","天文社社长","邮差少年","失忆的少女","钢琴调音师","我的同桌"];
 const WHERE = ["旧图书馆的还书箱","末班电车的座位缝","海边灯塔的楼梯","屋顶天台的水塔","雨夜便利店的收银台","废弃天文台的望远镜"];
 const SYN = [
@@ -1317,9 +1343,9 @@ const statsHTML = b => `<div class="stats">
   <div><span class="k">章节</span><span class="v">${b.chapters}<small>章</small></span></div>
   <div><span class="k">读到</span><span class="v">${b.progress}<small>%</small></span></div></div>`;
 const actsHTML = b => `<div class="acts">
-  <button class="btn primary" type="button" data-bk="${b.no - 1}">继续阅读 <small>第 ${b.reading} 章</small></button>
-  <button class="btn round" type="button" aria-label="目录" data-bk="${b.no - 1}" data-go2="toc">${icon.toc}</button>
-  <button class="btn round fav" type="button" aria-label="${favs.has(b.no - 1) ? "取消收藏" : "收藏"}" aria-pressed="${favs.has(b.no - 1)}" data-bk="${b.no - 1}">${icon.mark}</button></div>`;
+  <button class="btn primary" type="button" data-bk="${BOOKS.indexOf(b)}">${b.ext && b.reading <= 1 ? "开始阅读" : "继续阅读"} <small>第 ${b.reading} 章</small></button>
+  <button class="btn round" type="button" aria-label="目录" data-bk="${BOOKS.indexOf(b)}" data-go2="toc">${icon.toc}</button>
+  <button class="btn round fav" type="button" aria-label="${favs.has(BOOKS.indexOf(b)) ? "取消收藏" : "收藏"}" aria-pressed="${favs.has(BOOKS.indexOf(b))}" data-bk="${BOOKS.indexOf(b)}">${icon.mark}</button></div>`;
 const stagger = (els, delay = 0, dy = 12) => els.forEach((el, k) => el.animate(
   /* delay and spacing scale with the preset */
   [{ opacity: 0, transform: `translateY(${dy}px)` }, { opacity: 1, transform: "none" }],
@@ -1360,7 +1386,7 @@ function showFlat(){
   const sc = w / D;  // the twin matches the 3D cover at its rendered scale
   flatEl.innerHTML = `
     <div class="pg"><div class="tp">
-      <span class="vol">第 ${String(b.no).padStart(3, "0")} 册 · ${b.status}</span>
+      <span class="tvol">第 ${String(b.no).padStart(3, "0")} 册 · ${b.status}</span>
       <h2>${b.title}</h2><span class="by">${b.author} 著</span>
       <span class="seal">${b.author.slice(0, 2).split("").join("<br>")}</span>
       <span class="foot"><span>${b.code}</span><span>2026</span></span></div><div class="gutter"></div><div class="sh"></div></div>
@@ -1562,15 +1588,15 @@ document.getElementById("noteList").addEventListener("click", e => {
 /* ---------- 书库 ---------- */
 let libState = "all", libGroup = "", libQ = "";
 function renderLibrary(animate){
-  const count = k => BOOKS.filter(b => k === "all" || b.state === k).length;
+  const count = k => OWN.filter(b => k === "all" || b.state === k).length;
   document.getElementById("libCount").textContent = `Library · ${N}`;
-  document.getElementById("mineSub").textContent = `${N} 本 · ${BOOKS.filter(b => b.state === "reading").length} 本在读`;
+  document.getElementById("mineSub").textContent = `${N} 本 · ${OWN.filter(b => b.state === "reading").length} 本在读`;
   document.getElementById("libTabs").innerHTML = [["all", "全部"], ["reading", "在读"], ["done", "读完"], ["want", "想读"]]
     .map(([k, l]) => `<button type="button" role="tab" aria-selected="${k === libState}" data-k="${k}">${l}<small>${count(k)}</small></button>`).join("");
-  document.getElementById("libGroups").innerHTML = GROUPS.map(g => `<button class="pill" type="button" aria-pressed="${g === libGroup}" data-g="${g}">${g} · ${BOOKS.filter(b => b.group === g).length}</button>`).join("")
+  document.getElementById("libGroups").innerHTML = GROUPS.map(g => `<button class="pill" type="button" aria-pressed="${g === libGroup}" data-g="${g}">${g} · ${OWN.filter(b => b.group === g).length}</button>`).join("")
     + `<button class="pill" type="button" data-new style="border-style:dashed;color:var(--ink-2)">＋ 新建分组</button>`;
   const q = libQ.trim().toLowerCase();
-  const list = BOOKS.filter(b => (libState === "all" || b.state === libState) && (!libGroup || b.group === libGroup)
+  const list = OWN.filter(b => (libState === "all" || b.state === libState) && (!libGroup || b.group === libGroup)
     && (!q || b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q)));
   document.getElementById("libGrid").innerHTML = list.map(b => `<button class="cell" type="button" data-open="${b.no - 1}" data-st aria-label="${b.title}，${STATE_TXT[b.state]}">
     <span class="cv"><span>NO.${String(b.no).padStart(3, "0")}</span><i style='background-image:${coverOf(b.no - 1)}'></i></span>
@@ -1620,7 +1646,7 @@ try { const saved = localStorage.getItem("shelf-theme"); if (saved) root.dataset
 try { const sv = localStorage.getItem("shelf-speed"); if (sv === "A" || sv === "B") mode = sv; } catch (_) {}
 const SPEED_HINT = { A: "舒展、有分量，抽书时会翻开成跨页", B: "跟手、干脆，抽书后弹出信息卡" };
 function renderMe(){
-  const n = k => BOOKS.filter(b => b.state === k).length;
+  const n = k => OWN.filter(b => b.state === k).length;
   document.getElementById("meCounts").textContent = `藏书 ${N} · 在读 ${n("reading")} · 读完 ${n("done")}`;
   const mins = [32, 48, 20, 65, 18, 40, 29], lab = ["一", "二", "三", "四", "五", "六", "日"];
   const bars = document.getElementById("bars");
@@ -1975,13 +2001,14 @@ function renderRecs(){
   if (recSig !== srcSig()) { refreshRecs(); return; }
   const blurb = r => `${r.a}的作品，由「${r.src}」提供，已进入公版，可直接阅读。`;
   box.innerHTML = recHead(on) + `<div class="recs-row">${recItems.map((r, i) => i === 0
-    ? `<button class="rec feat" type="button" data-rec="0" aria-label="今日推荐：${esc(r.t)}，${esc(r.a)}">
+    ? `<div class="rec feat"><button class="ropen" type="button" data-rec="0" aria-label="今日推荐：${esc(r.t)}，${esc(r.a)}，查看详情">
         <span class="rc"><img alt="" src="${recCover(r)}"></span>
         <span class="fi"><span class="kick">今日推荐</span><span class="rt">${esc(r.t)}</span><span class="ra">${esc(r.a)}</span>
-        <span class="rd">${esc(blurb(r))}</span><span class="rs">${wanted.has(r.t) ? "✓ 已加入想读" : "＋ 加入想读"}</span></span></button>`
+        <span class="rd">${esc(blurb(r))}</span></span></button>
+        <button class="want" type="button" data-want="${esc(r.t)}" aria-pressed="${wanted.has(r.t)}">${wanted.has(r.t) ? "✓ 已想读" : "＋ 想读"}</button></div>`
     : `<button class="rec" type="button" data-rec="${i}" aria-label="${esc(r.t)}，${esc(r.a)}，来自 ${esc(r.src)}">
       <span class="rc"><img alt="" src="${recCover(r)}"></span><span class="rt">${esc(r.t)}</span><span class="ra">${esc(r.a)}</span>
-      <span class="rs">${wanted.has(r.t) ? "✓ 已加入想读" : esc(hostOf(sources.find(s => s.name === r.src)?.url || "") || r.src)}</span></button>`).join("")}</div>`;
+      <span class="rs">${wanted.has(r.t) ? "✓ 已想读" : esc(hostOf(sources.find(s => s.name === r.src)?.url || "") || r.src)}</span></button>`).join("")}</div>`;
 }
 function refreshRecs(){
   const box = document.getElementById("recs"), on = sources.filter(s => s.on).length;
@@ -2003,11 +2030,7 @@ document.getElementById("recs").addEventListener("click", e => {
   if (e.target.closest("#recRefresh")) { if (!recLoading) refreshRecs(); return; }
   if (e.target.closest("#recGo")) { switchTo("me"); setTimeout(openSources, ms(500)); return; }
   const c = e.target.closest("[data-rec]"); if (!c) return;
-  const r = recItems[+c.dataset.rec];
-  if (wanted.has(r.t)) { toast(`《${r.t}》已在想读里`); return; }
-  wanted.add(r.t); c.querySelector(".rs").textContent = "✓ 已加入想读";
-  c.querySelector(".rc").animate([{ transform: "none" }, { transform: "translateY(-6px) rotate(-2deg)" }, { transform: "none" }], { duration: ms(480) || 1, easing: "cubic-bezier(.3,1.5,.5,1)" });
-  toast(`《${r.t}》已加入想读 · 来自 ${r.src}`);
+  openDetail(recItems[+c.dataset.rec], c.querySelector("img"));
 });
 
 /* ================= 收藏 · feedback ================= */
@@ -2338,9 +2361,11 @@ function renderGuess(animate){
   const pool = [...DISC].sort((a, b) => ((DISC.indexOf(a) * 7 + guessSeed * 13) % 17) - ((DISC.indexOf(b) * 7 + guessSeed * 13) % 17)).slice(0, 6);
   const el = document.getElementById("secGuess");
   el.innerHTML = secHead("猜你喜欢", "根据你读过的《纸飞机寄往明天》《雨季来信》", moreBtn("guess", "换一换"))
-    + `<div class="guess">${pool.map(d => `<button class="gs" type="button" data-disc="${DISC.indexOf(d)}" data-st>
+    + `<div class="guess">${pool.map(d => `<div class="gs" data-st>
+      <button class="gopen" type="button" data-disc="${DISC.indexOf(d)}" aria-label="${d.t}，${d.a}，查看详情">
       <span class="gc"><img alt="" src="${discCover(d)}"></span>
-      <span class="gi"><b>${d.t}</b><small>${d.a} · ${d.cat}</small><span>${d.bl}</span><em>${wanted.has(d.t) ? "✓ 已加入想读" : "＋ 想读"}</em></span></button>`).join("")}</div>`;
+      <span class="gi"><b>${d.t}</b><small>${d.a} · ${d.cat}</small><span>${d.bl}</span></span></button>
+      <button class="want" type="button" data-want="${esc(d.t)}" aria-pressed="${wanted.has(d.t)}">${wanted.has(d.t) ? "✓ 已想读" : "＋ 想读"}</button></div>`).join("")}</div>`;
   if (animate) stagger([...el.querySelectorAll(".gs")], 0, 10);
 }
 /* hero: autoplay, dots, swipe */
@@ -2369,14 +2394,7 @@ document.getElementById("discPane").addEventListener("click", e => {
   if (m) { toast({ rank: "排行榜", must: "必读榜", cat: "分类", top: "高分佳作", pub: "出版精品" }[m] + "：下一步设计"); return; }
   const tg = e.target.closest("[data-tag]"); if (tg) { toast(`#${tg.dataset.tag}：标签书单下一步设计`); return; }
   const c = e.target.closest("[data-disc]"); if (!c || e.target.closest("#recs")) return;
-  const d = DISC[+c.dataset.disc];
-  if (c.classList.contains("gs")) {
-    if (wanted.has(d.t)) { toast(`《${d.t}》已在想读里`); return; }
-    wanted.add(d.t); c.querySelector("em").textContent = "✓ 已加入想读";
-    c.querySelector(".gc").animate([{ transform: "none" }, { transform: "translateY(-5px) rotate(-2deg)" }, { transform: "none" }], { duration: ms(480) || 1, easing: "cubic-bezier(.3,1.5,.5,1)" });
-    toast(`《${d.t}》已加入想读`); return;
-  }
-  toast(`《${d.t}》· ${d.a}：书籍详情下一步设计`);
+  openDetail(DISC[+c.dataset.disc], c.querySelector("img"));
 });
 /* 发现 / 我的书 */
 function setSeg(v, animate){
@@ -2393,9 +2411,121 @@ function placeSeg(){
 }
 document.getElementById("libSeg").addEventListener("click", e => { const b = e.target.closest("[data-seg]"); if (b) setSeg(b.dataset.seg, true); });
 
+/* ================= 发现 · book detail (cover flies out and opens into a spread) ================= */
+const dveil = document.getElementById("dveil"), dclose = document.getElementById("dclose");
+let det = null;   // { i, src, flat, panel }
+function discBook(d){
+  const info = DISC.find(x => x.t === d.t) || d;
+  let b = BOOKS.find(x => x.ext && x.title === d.t);
+  if (!b) {
+    let h = 0; for (const ch of d.t) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    b = { no: BOOKS.length + 1, ext: true, title: d.t, author: d.a, status: "已完结", code: "PD-" + String(h % 90000 + 10000),
+      chapters: 40 + h % 90, reading: 1, progress: 0, state: "want", words: (20 + h % 60 + (h % 10) / 10).toFixed(1),
+      cat: info.cat || "公版", sc: info.sc || null, cover: recCover(d),
+      syn: info.bl ? `${info.bl}${d.src ? `由「${d.src}」提供，` : ""}已进入公版，可以直接阅读。` : `${d.a}的作品，由「${d.src || "公版书库"}」提供，已进入公版，可以直接阅读。` };
+    BOOKS.push(b);
+  }
+  return BOOKS.indexOf(b);
+}
+function openDetail(d, img){
+  if (det || sel >= 0) return;
+  const i = discBook(d), b = BOOKS[i];
+  const ar = app.getBoundingClientRect(), vr = document.getElementById("views").getBoundingClientRect();
+  const w = Math.min((vr.width - 52) / 2, innerWidth >= 600 ? Math.min(300, vr.height * .3) : 176), h = w * 7 / 5;
+  const left = vr.left - ar.left + vr.width / 2 - w / 2, top = vr.top - ar.top + 74;
+  const sr = img.getBoundingClientRect();
+  clearInterval(heroT);
+  dveil.classList.add("on"); dclose.classList.add("on");
+  const flat = document.createElement("div"); flat.className = "flat dflat";
+  Object.assign(flat.style, { left: left + "px", top: top + "px", width: w + "px", height: h + "px" });
+  flat.innerHTML = `
+    <div class="pg"><div class="tp">
+      <span class="tvol">${b.cat} · ${b.status}</span>
+      <h2>${esc(b.title)}</h2><span class="by">${esc(b.author)} 著</span>
+      <span class="seal">公<br>版</span>
+      <span class="foot"><span>${b.code}</span><span>PUBLIC DOMAIN</span></span></div><div class="gutter"></div><div class="sh"></div></div>
+    <div class="leaf">
+      <div class="front"><img alt="" src="${b.cover}" style="width:100%;height:100%;object-fit:cover;filter:var(--art)"><div class="sh"></div></div>
+      <div class="back"><div class="endpaper"></div><div class="exlibris">
+        <span class="k">EX LIBRIS</span><span class="v">公版书库</span><span class="n">${esc(d.src || "PUBLIC DOMAIN")}</span></div>
+        <div class="gutter"></div><div class="sh"></div></div>
+    </div>`;
+  app.appendChild(flat);
+  img.style.visibility = "hidden";
+  const leaf = flat.querySelector(".leaf");
+  /* 1 · the cover leaves its card and lands at the top (shared element) */
+  const fly = flat.animate([
+    { transform: `translate(${sr.left - ar.left - left}px, ${sr.top - ar.top - top}px) scale(${sr.width / w}, ${sr.height / h})`, boxShadow: "0 0 0 rgba(0,0,0,0)" },
+    { transform: "none", boxShadow: "14px 22px 40px -18px rgba(0,0,0,.45)" }],
+    { duration: ms(560) || 1, easing: "cubic-bezier(.5,0,.15,1)" });
+  flat.querySelector(".pg").animate([{ opacity: 0 }, { opacity: 0, offset: .7 }, { opacity: 1 }], { duration: ms(560) || 1 });
+  /* 2 · then it opens like a real cover */
+  const panel = document.createElement("div"); panel.className = "dA ddet";
+  Object.assign(panel.style, { top: (top + h + 26) + "px", left: (left - w / 2) + "px", width: (2 * w) + "px" });
+  const statsD = `<div class="stats">
+    <div><span class="k">字数</span><span class="v">${b.words}<small>万</small></span></div>
+    <div><span class="k">章节</span><span class="v">${b.chapters}<small>章</small></span></div>
+    <div><span class="k">${b.sc ? "评分" : "分类"}</span><span class="v">${b.sc ? b.sc.toFixed(1) + "<small>分</small>" : esc(b.cat)}</span></div></div>`;
+  const wantOn = wanted.has(b.title);
+  panel.innerHTML = statsD + `<p class="syn">${esc(b.syn)}</p>` + actsHTML(b)
+    + `<button class="want big" type="button" data-want="${esc(b.title)}" aria-pressed="${wantOn}">${wantOn ? "✓ 已在想读" : "＋ 加入想读"}</button>`;
+  app.appendChild(panel);
+  det = { i, img, flat, panel, d };
+  fly.finished.then(() => {
+    const D = ms(1050) || 1, opt = { duration: D, easing: EASE_IO, fill: "forwards" };
+    flat.animate([{ transform: "translateX(0)" }, { transform: `translateX(${w / 2}px)` }], opt);
+    leaf.animate([{ transform: "rotateY(0deg)" }, { transform: "rotateY(-90deg) translateZ(6px)", offset: .5 }, { transform: "rotateY(-180deg)" }], opt);
+    leaf.querySelector(".front .sh").animate([{ opacity: 0 }, { opacity: .3 }], { ...opt, duration: D / 2 });
+    leaf.querySelector(".back .sh").animate([{ opacity: .3 }, { opacity: .3, offset: .5 }, { opacity: 0 }], opt);
+    flat.querySelectorAll(".gutter").forEach(g => g.animate([{ opacity: 0 }, { opacity: 1 }], { ...opt, delay: D * .6, duration: ms(500) || 1 }));
+    stagger([...panel.children], 520, 12);
+  });
+  panel.style.opacity = 0; setTimeout(() => { panel.style.opacity = ""; }, ms(560) + 400);
+  setTimeout(() => dclose.focus({ preventScroll: true }), ms(600));
+}
+function closeDetail(){
+  if (!det || det.closing) return; det.closing = true;
+  const { flat, panel, img } = det, w = flat.offsetWidth, h = flat.offsetHeight;
+  const ar = app.getBoundingClientRect(), left = parseFloat(flat.style.left), top = parseFloat(flat.style.top);
+  panel.animate([{ opacity: 1 }, { opacity: 0, transform: "translateY(8px)" }], { duration: ms(200) || 1, fill: "forwards" });
+  flat.querySelectorAll(".gutter").forEach(g => g.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, fill: "forwards" }));
+  const opt = { duration: ms(620) || 1, easing: EASE_IO, fill: "forwards" };
+  flat.querySelector(".leaf").animate([{ transform: "rotateY(-180deg)" }, { transform: "rotateY(0deg)" }], opt);
+  flat.animate([{ transform: `translateX(${w / 2}px)` }, { transform: "translateX(0)" }], opt).finished.then(() => {
+    const sr = img.getBoundingClientRect();
+    flat.querySelector(".pg").animate([{ opacity: 1 }, { opacity: 0 }], { duration: ms(200) || 1, fill: "forwards" });
+    dveil.classList.remove("on"); dclose.classList.remove("on");
+    return flat.animate([{ transform: "none" }, { transform: `translate(${sr.left - ar.left - left}px, ${sr.top - ar.top - top}px) scale(${sr.width / w}, ${sr.height / h})` }],
+      { duration: ms(460) || 1, easing: "cubic-bezier(.5,0,.15,1)", fill: "forwards" }).finished;
+  }).then(() => {
+    img.style.visibility = ""; flat.remove(); panel.remove();
+    const back = det.img.closest("button"); det = null; back?.focus({ preventScroll: true }); startHero();
+  });
+}
+dveil.addEventListener("click", closeDetail);
+dclose.addEventListener("click", closeDetail);
+addEventListener("keydown", e => { if (e.key === "Escape" && det && !reader.classList.contains("on") && !tocPage.classList.contains("on")) { closeDetail(); e.stopImmediatePropagation(); } }, true);
+
+/* 想读 lives on its own small button, everywhere */
+function toggleWant(t, btn){
+  const on = !wanted.has(t);
+  on ? wanted.add(t) : wanted.delete(t);
+  document.querySelectorAll(`.want[data-want="${CSS.escape(t)}"]`).forEach(x => {
+    x.setAttribute("aria-pressed", on);
+    x.textContent = on ? (x.classList.contains("big") ? "✓ 已在想读" : "✓ 已想读") : (x.classList.contains("big") ? "＋ 加入想读" : "＋ 想读");
+  });
+  if (on && !reduce) btn.animate([{ transform: "scale(1)" }, { transform: "scale(.88)", offset: .3 }, { transform: "scale(1.08)", offset: .7 }, { transform: "scale(1)" }], { duration: 420, easing: "ease-out" });
+  snack(on ? `《${t}》已加入想读` : `已从想读移除《${t}》`, on ? ICON_MARK_FILL : "", () => toggleWant(t, btn));
+}
+app.addEventListener("click", e => {
+  const w = e.target.closest("[data-want]"); if (!w) return;
+  e.stopPropagation(); toggleWant(w.dataset.want, w);
+}, true);
+
 /* system back (Android app shell calls this): close the open book, else return to the shelf */
 window.__back = () => {
   if (tocPage.classList.contains("on")) { closeToc(); return true; }
+  if (det && !reader.classList.contains("on")) { closeDetail(); return true; }
   if (reader.classList.contains("on")) { if (reader.classList.contains("chrome")) setChrome(false); else closeReader(); return true; }
   if (sel >= 0) { closeBook(); return true; }
   if (menuEl) { closeMenu(); return true; }
