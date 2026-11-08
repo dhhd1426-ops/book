@@ -413,6 +413,7 @@ h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
 .src .stt.ok{--dot:#4f8a5b}
 .src .stt.slow{--dot:#c08a2e}
 .src .stt.bad{--dot:#b5452f}
+.src .stt.miss{--dot:#b5452f;color:#b5452f;letter-spacing:.04em}
 .src .stt.wait::before{animation:blink 1s infinite}
 @keyframes blink{50%{opacity:.2}}
 .src .tog{width:52px;height:44px;border:0;background:none;padding:0;cursor:pointer;display:grid;place-items:center;flex-shrink:0;transition:opacity .25s,width .35s}
@@ -1841,7 +1842,7 @@ function renderSources(animate){
   srcList.innerHTML = list.length ? list.map(s => `<div class="src${s.on ? "" : " off"}" data-id="${s.id}" data-st>
       <button class="chk" type="button" role="checkbox" aria-checked="${picked.has(s.id)}" aria-label="选择 ${esc(s.name)}" tabindex="${selecting ? 0 : -1}"><i>${check}</i></button>
       <button class="main" type="button" data-act="row"><span class="nm">${s.pin ? "↑ " : ""}${esc(s.name)}</span>
-        <span class="mt"><span class="tag">${esc(s.type)}</span><span class="host">${esc(hostOf(s.url))}</span><span class="stt ${s.st}">${statusTxt(s)}</span></span></button>
+        <span class="mt"><span class="tag">${esc(s.type)}</span><span class="host">${esc(hostOf(s.url))}</span>${noRule(s) ? `<span class="stt miss">缺少搜索规则</span>` : `<span class="stt ${s.st}">${statusTxt(s)}</span>`}</span></button>
       <button class="tog" type="button" role="switch" aria-checked="${s.on}" aria-label="启用 ${esc(s.name)}" data-act="tog"><span class="switch" aria-hidden="true"></span></button>
       <button class="more" type="button" aria-label="更多操作" data-act="more"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5.5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="18.5" r="1.6"/></svg></button>
     </div>`).join("")
@@ -1913,7 +1914,23 @@ document.getElementById("selbar").addEventListener("click", e => {
 });
 
 /* rows: toggle, check, menu */
-function testSource(s){
+/* a book-source (小说 / 漫画 …) imported by an older version, which did not keep its search rule */
+const noRule = s => !s.search && !["OPDS", "WebDAV", "网页"].includes(s.type);
+const whyFail = e => e?.name === "AbortError" ? "超时" : /^HTTP \d/.test(e?.message || "") ? e.message
+  : /^java\./.test(e?.message || "") ? `规则用到了 ${e.message}，暂不支持` : e instanceof TypeError ? "连不上" : "规则出错";
+async function testSource(s){
+  if (noRule(s)) { toast(`「${s.name}」没有保存搜索规则：在右上角加号里重新导入这个书源文件`); return; }
+  if (s.search || s.type === "OPDS") {   // a real search with the source's own check word
+    s.st = "wait"; renderSources();
+    const word = s.search?.rule.checkKeyWord || "我的", t0 = performance.now(), ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 12000);
+    let msg;
+    try {
+      const list = await (s.search ? legadoSearch : opdsSearch)(s, word, ctl.signal);
+      s.ms = Math.round(performance.now() - t0); s.st = s.ms > 3000 ? "slow" : "ok";
+      msg = list.length ? `「${s.name}」可用：搜索「${word}」返回 ${list.length} 本，用时 ${statusTxt(s)}` : `「${s.name}」连上了，但搜索「${word}」没解析出书（网站可能改版了）`;
+    } catch (e) { s.st = "bad"; s.ms = 0; msg = `「${s.name}」搜索失败：${whyFail(e)}`; }
+    clearTimeout(tm); saveSources(); renderSources(); toast(msg); return;
+  }
   s.st = "wait"; renderSources();
   setTimeout(() => {
     const r = Math.random(); s.st = r < .12 ? "bad" : r < .3 ? "slow" : "ok";
@@ -2081,7 +2098,7 @@ function searchRuleOf(o){
   const url = o.searchUrl || o.ruleSearchUrl;
   if (!url || !rule || !rule.bookList || !rule.name) return undefined;
   const keep = {};
-  ["bookList", "name", "author", "intro", "kind", "lastChapter", "wordCount", "coverUrl", "bookUrl"].forEach(k => { if (rule[k]) keep[k] = String(rule[k]); });
+  ["bookList", "name", "author", "intro", "kind", "lastChapter", "wordCount", "coverUrl", "bookUrl", "checkKeyWord"].forEach(k => { if (rule[k]) keep[k] = String(rule[k]); });
   return { url: String(url), rule: keep, header: o.header ? String(o.header) : "" };
 }
 /* GitHub page links point at an HTML page; the file itself lives on raw.githubusercontent.com,
@@ -2928,10 +2945,15 @@ function sxRender(){
     <div class="sx-list">${list.map(row).join("")}</div>
     ${searching && !list.length ? `<div class="gsx-r gsx-sk"><span class="gsx-c"></span><span class="gsx-i"><i></i><i></i></span></div>`.repeat(3) : ""}
     ${!searching && !list.length ? `<div class="sx-none"><b>没有找到「${esc(q)}」</b>
-      <span>${st.tab === "all" ? "已启用的书库里都没有这本书。可能还在版权期内、没有开放，或者书名有别的写法。" : "换到「综合」看看全部结果。"}</span>
-      ${st.tab === "all" ? `<button class="btn primary" type="button" data-ask="${esc(q)}">${sxAsk.includes(q) ? "已在求书清单" : "求书：有书库收录时提醒我"}</button>` : ""}</div>
+      <span>${st.tab !== "all" ? "换到「综合」看看全部结果。"
+        : !st.total && st.stale?.length ? `没有书源参与搜索：「${esc(st.stale.slice(0, 2).join("」「"))}」${st.stale.length > 2 ? ` 等 ${st.stale.length} 个` : ""}是旧版本导入的，当时没保存搜索规则。在书源管理里把原来的书源文件或链接重新导入一次就好。`
+        : !st.total ? "没有已启用、能按书名搜索的书源。去书源管理启用或导入一个。"
+        : st.fail.length === st.total ? `书源都没搜成功：${st.fail.slice(0, 3).map(n => `「${esc(n)}」${esc(st.why?.[n] || "")}`).join("，")}。`
+        : "已启用的书库里都没有这本书。可能还在版权期内、没有开放，或者书名有别的写法。"}</span>
+      ${st.tab === "all" && !st.total ? `<button class="btn primary" type="button" data-sx="srcs">去书源管理</button>`
+        : st.tab === "all" ? `<button class="btn primary" type="button" data-ask="${esc(q)}">${sxAsk.includes(q) ? "已在求书清单" : "求书：有书库收录时提醒我"}</button>` : ""}</div>
       ${similar.length ? `<div class="sx-h"><b>相似的书</b></div><div class="sx-list">${similar.map(row).join("")}</div>` : ""}` : ""}
-    ${!searching ? `<p class="gsx-note">${st.live ? `联网搜索了：${esc(st.live)}。` : ""}${st.fail.length ? `没有响应：${st.fail.map(esc).join("、")}。` : ""}书架和公版书目里的「演示数据」只用于预览。${st.skipped ? `另有 ${st.skipped} 个书源没有搜索规则，没有参与${st.stale ? `（其中 ${st.stale} 个是旧版本导入的，当时没保存规则，在书源管理里重新导入一次即可）` : "（WebDAV、普通网址等）"}。` : ""}</p>` : ""}`;
+    ${!searching ? `<p class="gsx-note">${st.live ? `联网搜索了：${esc(st.live)}。` : ""}${st.fail.length ? `没搜成功：${st.fail.map(n => esc(n) + (st.why?.[n] ? `（${esc(st.why[n])}）` : "")).join("、")}。` : ""}书架和公版书目里的「演示数据」只用于预览。${st.skipped ? `另有 ${st.skipped} 个书源没有搜索规则，没有参与${st.stale?.length ? `（其中 ${st.stale.length} 个是旧版本导入的，当时没保存规则，在书源管理里重新导入一次即可）` : "（WebDAV、普通网址等）"}。` : ""}</p>` : ""}`;
 }
 
 /* ---------- real search: OPDS catalogues via OpenSearch ---------- */
@@ -3263,7 +3285,7 @@ function runSources(q){
   const st = sxState, run = st.run, on = sources.filter(s => s.on);
   const searchable = on.filter(s => s.type === "OPDS" || s.search);
   st.total = searchable.length; st.skipped = on.length - searchable.length; st.done = 0; st.fail = []; st.live = "";
-  st.stale = on.filter(s => !s.search && s.type !== "OPDS" && s.type !== "WebDAV" && s.type !== "网页").length;
+  st.stale = on.filter(noRule).map(s => s.name); st.why = {};
   const ok = [];
   sxRender();
   let next = 0;
@@ -3273,7 +3295,7 @@ function runSources(q){
     (s.search ? legadoSearch : opdsSearch)(s, q, ctl.signal).then(list => {
       if (run !== sxState.run) return;
       st.src.push(...list.slice(0, 20)); if (list.length) ok.push(s.name);
-    }).catch(() => { if (run === sxState.run) st.fail.push(s.name); })
+    }).catch(e => { if (run === sxState.run) { st.fail.push(s.name); st.why[s.name] = whyFail(e); } })
       .finally(() => { clearTimeout(t); if (run !== sxState.run) return; st.done++; st.live = ok.join("、"); sxRender(); work(); });
   };
   for (let i = 0; i < Math.min(6, searchable.length); i++) work();
@@ -3283,6 +3305,7 @@ function runSources(q){
 sxBody.addEventListener("click", e => {
   const qb = e.target.closest("[data-q]"); if (qb) { doSearch(qb.dataset.q); return; }
   const k = e.target.closest("[data-sx]")?.dataset.sx; if (k === "clear") { sxHist = []; saveHist(); sxRender(); return; }
+  if (k === "srcs") { closeSearch(); switchTo("me"); setTimeout(openSources, ms(500)); return; }
   const tb = e.target.closest("[data-tab]"); if (tb) { sxState.tab = tb.dataset.tab; sxRender(); return; }
   const ask = e.target.closest("[data-ask]");
   if (ask) { const t = ask.dataset.ask; if (!sxAsk.includes(t)) { sxAsk.unshift(t); saveHist(); snack(`已加入求书：《${t}》`, ICON_MARK_FILL, () => { sxAsk = sxAsk.filter(x => x !== t); saveHist(); sxRender(); }); } sxRender(); return; }
