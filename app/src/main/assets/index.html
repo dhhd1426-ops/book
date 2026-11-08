@@ -234,6 +234,8 @@ h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
   padding-left:var(--gut);padding-right:max(var(--gut),env(safe-area-inset-right,0px));
   visibility:hidden;pointer-events:none}
 .view.is-on{visibility:visible;pointer-events:auto}
+/* a page that is not showing is not rendered at all, so nothing inside it can leak onto another page */
+.view:not(.is-on){display:none}
 .view.scroll{overflow-y:auto;overscroll-behavior:contain;padding-bottom:28px;scrollbar-width:none}
 .view.scroll::-webkit-scrollbar{display:none}
 .sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
@@ -556,8 +558,8 @@ h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
 /* reader chrome: shows on a tap in the middle of the page */
 .rd-bar{position:absolute;left:0;right:0;z-index:3;background:color-mix(in oklab,var(--rp-bg) 92%,var(--rp-ink));box-shadow:0 0 0 1px var(--rp-line);
   transition:transform .45s cubic-bezier(.2,.9,.2,1)}
-.rd-bar.top{top:0;padding:calc(6px + env(safe-area-inset-top,0px)) 14px 8px;display:flex;align-items:center;gap:6px;transform:translateY(-105%)}
-.rd-bar.bot{bottom:0;padding:14px 22px calc(14px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px;transform:translateY(105%)}
+.rd-bar.rd-top{top:0;padding:calc(6px + env(safe-area-inset-top,0px)) 14px 8px;display:flex;align-items:center;gap:6px;transform:translateY(-105%)}
+.rd-bar.rd-bot{bottom:0;padding:14px 22px calc(14px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px;transform:translateY(105%)}
 .reader.chrome .rd-bar{transform:none}
 .rd-bar .t{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}
 .rd-bar .t b{font-size:15px;font-weight:500;letter-spacing:.12em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -612,7 +614,7 @@ h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
   .rd-frame{left:max(60px,calc(50% - 340px));right:max(60px,calc(50% - 340px))}
   .rd-foot,.rd-head{padding-left:max(60px,calc(50% - 340px));padding-right:max(60px,calc(50% - 340px));left:0;right:0}
   .rd-ribbon{right:max(36px,calc(50% - 370px))}
-  .rd-bar.bot{padding-left:max(40px,calc(50% - 320px));padding-right:max(40px,calc(50% - 320px))}
+  .rd-bar.rd-bot{padding-left:max(40px,calc(50% - 320px));padding-right:max(40px,calc(50% - 320px))}
 }
 
 /* ---------- 书库 layout v2: header / 推荐 / 我的书 ---------- */
@@ -671,8 +673,8 @@ h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
 /* hero carousel */
 .hero{position:relative;height:184px;border-radius:18px;overflow:hidden;touch-action:pan-y;box-shadow:0 18px 36px -24px var(--shadow)}
 .slide{position:absolute;inset:0;display:flex;align-items:stretch;border:0;padding:0;margin:0;font:inherit;text-align:left;cursor:pointer;
-  background:radial-gradient(120% 140% at 85% 30%,color-mix(in oklab,var(--hb) 70%,#fff 12%),var(--hb));color:#f4ecdc;opacity:0;visibility:hidden;transition:opacity .6s,visibility .6s}
-.slide.on{opacity:1;visibility:visible}
+  background:radial-gradient(120% 140% at 85% 30%,color-mix(in oklab,var(--hb) 70%,#fff 12%),var(--hb));color:#f4ecdc;opacity:0;pointer-events:none;transition:opacity .6s}
+.slide.on{opacity:1;pointer-events:auto}
 .slide::after{content:"";position:absolute;inset:0;opacity:.14;mix-blend-mode:overlay;pointer-events:none;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
 .hx{position:relative;z-index:1;flex:1;min-width:0;display:flex;flex-direction:column;gap:7px;padding:22px 0 22px 22px}
@@ -942,12 +944,12 @@ h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
     <div class="rd-turn" id="rdTurn"></div>
     <div class="rd-ribbon" id="rdRibbon"></div>
     <div class="rd-foot"><span id="rdFCh"></span><span id="rdFPg"></span></div>
-    <div class="rd-bar top">
+    <div class="rd-bar rd-top">
       <button class="rd-ib" type="button" id="rdBack" aria-label="返回"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
       <span class="t"><b id="rdTB"></b><small id="rdTC"></small></span>
       <button class="rd-ib mk" type="button" id="rdMark" aria-label="给这一页加书签"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M6.5 3.5h11v17l-5.5-4-5.5 4z"/></svg></button>
     </div>
-    <div class="rd-bar bot">
+    <div class="rd-bar rd-bot">
       <div class="rd-row"><button class="rd-ib" type="button" data-rd="prev">上一章</button><input type="range" id="rdRange" min="1" max="100" value="1" aria-label="跳到章节"><button class="rd-ib" type="button" data-rd="next">下一章</button></div>
       <div class="rd-row">
         <button class="rd-ib" type="button" data-rd="toc" aria-label="目录" style="height:58px;width:58px;border-radius:12px;box-shadow:inset 0 0 0 1px var(--rp-line)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg></button>
@@ -1525,6 +1527,7 @@ function switchTo(v){
   tabs.forEach(t => { if (t.dataset.go === v) t.setAttribute("aria-current", "page"); });
   if (curView === "shelf") { clearTimeout(autoTimer); clearTimeout(idleTimer); }
   curView = v;
+  to.classList.add("is-on");          /* render into a page that is laid out, so measurements are real */
   if (v === "notes") renderNotes();
   if (v === "library") renderLibrary();
   if (v === "me") renderMe();
@@ -2195,7 +2198,7 @@ reader.querySelector(".rd-sw").addEventListener("click", e => {
   reader.querySelectorAll(".rd-sw button").forEach(x => x.setAttribute("aria-checked", x === b));
   toast(["", "纸张 1 · 宣纸", "纸张 2 · 旧书页", "纸张 3 · 墨夜"][+rdPaper]);
 });
-reader.querySelector(".rd-bar.bot").addEventListener("click", e => {
+reader.querySelector(".rd-bar.rd-bot").addEventListener("click", e => {
   const k = e.target.closest("[data-rd]")?.dataset.rd; if (!k) return;
   if (k === "prev") loadChapter(rd.ch - 1, false, -1);
   if (k === "next") loadChapter(rd.ch + 1, false, 1);
