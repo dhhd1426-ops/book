@@ -1,0 +1,48 @@
+# 书源网络检查：从 GitHub 的服务器请求书源网站，看能不能连上、返回什么。不编译、不打包。
+# 手动运行：Actions → 书源网络检查 → Run workflow（可以填自己的地址，空格分隔）
+name: 书源网络检查
+
+on:
+  workflow_dispatch:
+    inputs:
+      urls:
+        description: "要检查的地址（空格分隔，留空用默认列表）"
+        required: false
+        default: ""
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: 检查
+        env:
+          URLS: ${{ github.event.inputs.urls }}
+        run: |
+          UA="Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36"
+          if [ -z "$URLS" ]; then
+            URLS="https://api-x.shrtxs.cn/qd//search.php?keyword=%E8%AF%A1%E7%A7%98%E4%B9%8B%E4%B8%BB&page=1
+          https://api-x.shrtxs.cn/qd/search.php?keyword=%E8%AF%A1%E7%A7%98%E4%B9%8B%E4%B8%BB&page=1
+          https://www.royalroad.com/fictions/search?title=mother
+          https://freewebnovel.com/search?keyword=shadow
+          https://www.scribblehub.com/series-finder/?sf=1&sh=novel
+          https://ranobes.net/search/lord/
+          https://lnori.com/library
+          https://api.lncrawler.monster/novels/search/?query=reverend
+          https://www.manhuagui.com/
+          https://www.baozimh.com/
+          https://www.gufengmh.com/"
+          fi
+          echo "runner IP: $(curl -s -m 10 https://api.ipify.org) ($(curl -s -m 10 https://ipinfo.io/country))"
+          for u in $URLS; do
+            host=$(echo "$u" | sed -E 's#https?://([^/]+).*#\1#')
+            echo
+            echo "================ $u"
+            echo "-- TLS 握手 ($host:443)"
+            timeout 15 openssl s_client -connect "$host:443" -servername "$host" -brief </dev/null 2>&1 | head -6 || echo "(openssl 超时)"
+            echo "-- HTTP"
+            curl -sS -L -m 25 -A "$UA" -o /tmp/body -w "status=%{http_code} ip=%{remote_ip} tls=%{ssl_verify_result} time=%{time_total}s final=%{url_effective}\n" "$u" 2>&1 || true
+            echo "-- 返回开头"
+            head -c 600 /tmp/body 2>/dev/null | tr '\n' ' '; echo
+            rm -f /tmp/body
+          done
