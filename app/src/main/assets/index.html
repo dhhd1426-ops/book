@@ -237,7 +237,7 @@ h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
 .view.scroll{overflow-y:auto;overscroll-behavior:contain;padding-bottom:28px;scrollbar-width:none}
 .view.scroll::-webkit-scrollbar{display:none}
 .sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-.sub{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.14em;color:var(--ink-2)}
+.nsum{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.14em;color:var(--ink-2)}
 .k{font-family:var(--f-mono);font-size:10px;letter-spacing:.2em;color:var(--ink-2)}
 .pills{display:flex;gap:6px;margin-top:16px;flex-wrap:wrap}
 .pill{height:34px;padding:0 15px;border-radius:999px;border:1px solid var(--ink-3);background:none;color:var(--ink);font:inherit;font-size:13px;letter-spacing:.16em;cursor:pointer;transition:background .3s,color .3s,border-color .3s}
@@ -360,6 +360,139 @@ h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
 @media (min-width:1100px){
   .note-list{columns:3 280px}
 }
+
+/* ---------- add block (我的, top right) ---------- */
+.mast-row.has-add{align-items:center}
+.add-blk{width:44px;height:44px;border-radius:14px;border:0;background:var(--accent);color:var(--paper);display:grid;place-items:center;cursor:pointer;
+  box-shadow:0 8px 18px -10px var(--accent);transition:transform .35s cubic-bezier(.2,.9,.2,1.3)}
+.add-blk svg{transition:transform .5s cubic-bezier(.2,.9,.2,1)}
+.add-blk:hover svg{transform:rotate(90deg)}
+.add-blk:active{transform:scale(.92)}
+.add-blk:focus-visible{outline:1.5px solid var(--ink);outline-offset:3px}
+
+/* ---------- 书源管理 (sub page) ---------- */
+.sub{position:absolute;inset:0;z-index:35;background:var(--paper);color:var(--ink);display:flex;flex-direction:column;visibility:hidden;pointer-events:none}
+.sub.on{visibility:visible;pointer-events:auto}
+.sub-in{--gut:max(24px,env(safe-area-inset-left,0px));flex:1;min-height:0;width:100%;max-width:760px;margin:0 auto;display:flex;flex-direction:column;
+  padding:calc(14px + env(safe-area-inset-top,0px)) var(--gut) 0;box-sizing:border-box}
+.sub-top{display:flex;align-items:center;gap:6px}
+.sub-top .back{width:44px;height:44px;margin-left:-10px;border:0;background:none;color:var(--ink);display:grid;place-items:center;cursor:pointer;border-radius:12px}
+.sub-top .ttl{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}
+.sub-top .ttl b{font-size:24px;font-weight:600;letter-spacing:.1em;line-height:1.1}
+.sub-top .ttl small{font-family:var(--f-mono);font-size:10px;letter-spacing:.2em;color:var(--ink-2);text-transform:uppercase}
+.txt-btn{height:36px;padding:0 12px;border:0;border-radius:10px;background:none;color:var(--ink);font:inherit;font-size:13px;letter-spacing:.14em;cursor:pointer}
+.txt-btn:hover,.sub-top .back:hover{background:color-mix(in oklab,var(--ink) 6%,transparent)}
+.txt-btn:focus-visible,.sub-top .back:focus-visible,.src button:focus-visible,.tile:focus-visible,.menu button:focus-visible{outline:1.5px solid var(--accent);outline-offset:2px}
+.src-tools{display:flex;gap:8px;margin-top:16px}
+.src-tools .search{margin-top:0;flex:1}
+.sortb{height:44px;padding:0 14px;border:0;border-radius:12px;background:var(--sheet);box-shadow:0 0 0 1px var(--edge);color:var(--ink);font:inherit;font-size:12.5px;letter-spacing:.12em;display:flex;align-items:center;gap:7px;cursor:pointer;white-space:nowrap}
+.src-chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:14px calc(-1 * var(--gut)) 0;padding:0 var(--gut) 2px}
+.src-chips::-webkit-scrollbar{display:none}
+.src-chips .pill{flex-shrink:0;height:32px;font-size:12.5px;padding:0 13px}
+.src-chips .pill small{font-family:var(--f-mono);font-size:10px;margin-left:5px;opacity:.7}
+.src-list{flex:1;min-height:0;overflow-y:auto;margin:12px calc(-1 * var(--gut)) 0;padding:0 var(--gut) 110px;scrollbar-width:none}
+.src-list::-webkit-scrollbar{display:none}
+.src{display:flex;align-items:center;gap:12px;min-height:74px;border-top:1px solid var(--ink-3);position:relative}
+.src:last-child{border-bottom:1px solid var(--ink-3)}
+.src .chk{width:0;height:22px;flex-shrink:0;overflow:hidden;opacity:0;border:0;background:none;padding:0;cursor:pointer;transition:width .35s cubic-bezier(.2,.9,.2,1),opacity .25s;display:grid;place-items:center;color:var(--paper)}
+.src .chk i{width:20px;height:20px;border-radius:6px;box-shadow:inset 0 0 0 1.5px var(--ink-2);display:grid;place-items:center;transition:background .2s,box-shadow .2s}
+.src .chk[aria-checked="true"] i{background:var(--ink);box-shadow:none}
+.src .chk svg{opacity:0;transition:opacity .2s}
+.src .chk[aria-checked="true"] svg{opacity:1}
+.sub.selecting .src .chk{width:24px;opacity:1}
+.src .main{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;padding:12px 0;border:0;background:none;text-align:left;font:inherit;color:var(--ink);cursor:pointer}
+.src .nm{font-size:15.5px;letter-spacing:.1em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.src.off .nm{color:var(--ink-2)}
+.src .mt{display:flex;align-items:center;gap:8px;font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;color:var(--ink-2);min-width:0}
+.src .tag{padding:2px 6px;border-radius:5px;box-shadow:inset 0 0 0 1px var(--ink-3);letter-spacing:.14em;color:var(--ink);flex-shrink:0}
+.src .host{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.src .stt{display:flex;align-items:center;gap:5px;flex-shrink:0;margin-left:auto}
+.src .stt::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--dot,var(--ink-3))}
+.src .stt.ok{--dot:#4f8a5b}
+.src .stt.slow{--dot:#c08a2e}
+.src .stt.bad{--dot:#b5452f}
+.src .stt.wait::before{animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.2}}
+.src .tog{width:52px;height:44px;border:0;background:none;padding:0;cursor:pointer;display:grid;place-items:center;flex-shrink:0;transition:opacity .25s,width .35s}
+.src .tog .switch{pointer-events:none}
+.src .tog[aria-checked="true"] .switch{background:var(--ink)}
+.src .tog[aria-checked="true"] .switch::after{transform:translateX(18px)}
+.src .more{width:36px;height:44px;border:0;background:none;color:var(--ink-2);cursor:pointer;display:grid;place-items:center;flex-shrink:0;border-radius:10px;transition:opacity .25s,width .35s}
+.sub.selecting .src .tog,.sub.selecting .src .more{opacity:0;width:0;pointer-events:none;overflow:hidden}
+.src-empty{padding:48px 0;text-align:center;color:var(--ink-2);font-size:13px;letter-spacing:.1em;line-height:2}
+.selbar{position:absolute;left:0;right:0;bottom:0;z-index:2;background:var(--sheet);box-shadow:0 -1px 0 var(--edge),0 -20px 40px -24px var(--shadow);
+  padding:12px max(20px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(20px,env(safe-area-inset-left,0px));
+  display:flex;align-items:center;gap:6px;transform:translateY(110%);transition:transform .45s cubic-bezier(.2,.9,.2,1)}
+.sub.selecting .selbar{transform:none}
+.selbar .cnt{flex:1;font-family:var(--f-mono);font-size:12px;letter-spacing:.12em;color:var(--ink-2)}
+.selbar .cnt b{color:var(--ink);font-weight:500}
+.selbar .danger{color:#b5452f}
+:root[data-theme="dark"] .selbar .danger{color:#e07a64}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .selbar .danger{color:#e07a64}}
+.selbar .txt-btn:disabled{opacity:.35;cursor:default}
+
+/* row menu */
+.menu{position:absolute;z-index:5;min-width:168px;background:var(--sheet);border-radius:14px;padding:6px;
+  box-shadow:0 0 0 1px var(--edge),0 18px 40px -12px var(--shadow);display:flex;flex-direction:column;transform-origin:top right}
+.menu button{height:42px;border:0;background:none;border-radius:9px;padding:0 12px;font:inherit;font-size:14px;letter-spacing:.14em;color:var(--ink);text-align:left;cursor:pointer;display:flex;align-items:center;gap:10px}
+.menu button:hover{background:color-mix(in oklab,var(--ink) 6%,transparent)}
+.menu .danger{color:#b5452f}
+
+/* add sheet */
+.scrim{position:absolute;inset:0;z-index:3;background:rgba(10,10,14,.32);opacity:0;pointer-events:none;transition:opacity .35s}
+.scrim.on{opacity:1;pointer-events:auto}
+.asheet{position:absolute;left:0;right:0;bottom:0;z-index:4;margin:0 auto;max-width:620px;background:var(--sheet);border-radius:26px 26px 0 0;
+  box-shadow:0 -30px 60px -30px var(--shadow);padding:10px max(22px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(22px,env(safe-area-inset-left,0px));
+  display:flex;flex-direction:column;gap:16px;transform:translateY(105%)}
+.asheet .grab{align-self:center;width:36px;height:4px;border-radius:2px;background:var(--ink-3)}
+.asheet h3{margin:0;font-size:19px;font-weight:600;letter-spacing:.14em}
+.asheet h3 small{display:block;margin-top:4px;font-family:var(--f-mono);font-size:10px;font-weight:400;letter-spacing:.2em;color:var(--ink-2)}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.tile{display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:16px 14px 14px;border:0;border-radius:16px;background:var(--paper);box-shadow:inset 0 0 0 1px var(--edge);
+  font:inherit;color:var(--ink);text-align:left;cursor:pointer;transition:transform .3s cubic-bezier(.2,.9,.2,1.3),background .3s}
+.tile:hover{background:color-mix(in oklab,var(--paper) 92%,var(--ink))}
+.tile:active{transform:scale(.97)}
+.tile .ic{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;background:color-mix(in oklab,var(--accent) 14%,transparent);color:var(--accent)}
+.tile b{font-weight:500;font-size:15px;letter-spacing:.14em}
+.tile small{font-size:11.5px;letter-spacing:.06em;color:var(--ink-2);line-height:1.5}
+.help{align-self:center;height:40px;border:0;background:none;font:inherit;font-size:12.5px;letter-spacing:.16em;color:var(--ink-2);cursor:pointer;display:flex;align-items:center;gap:6px}
+.urlform{display:flex;flex-direction:column;gap:12px}
+.urlform label{font-family:var(--f-mono);font-size:10px;letter-spacing:.2em;color:var(--ink-2)}
+.urlform textarea{min-height:84px;resize:none;border:0;border-radius:14px;background:var(--paper);box-shadow:inset 0 0 0 1px var(--ink-3);padding:12px 14px;
+  font-family:var(--f-mono);font-size:13px;line-height:1.6;color:var(--ink);outline:none}
+.urlform textarea:focus{box-shadow:inset 0 0 0 1.5px var(--ink)}
+.urlform .err{min-height:16px;font-size:12px;color:#b5452f;letter-spacing:.06em}
+.urlform .acts{gap:10px}
+@media (min-width:600px){ .sub-in{--gut:clamp(36px,5vw,64px)} .sub-top .ttl b{font-size:28px} }
+
+/* ---------- 书库 · 书源推荐 ---------- */
+.recs{display:flex;flex-direction:column;gap:12px}
+.recs-h{display:flex;align-items:flex-end;gap:10px}
+.recs-t{flex:1;display:flex;flex-direction:column;gap:3px}
+.recs-t b{font-weight:500;font-size:16px;letter-spacing:.16em}
+.recs-t small{font-family:var(--f-mono);font-size:10px;letter-spacing:.14em;color:var(--ink-2)}
+.rf{display:flex;align-items:center;gap:6px;color:var(--ink-2)}
+.rf.spin svg{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.recs-row{display:flex;gap:14px;overflow-x:auto;scrollbar-width:none;margin:0 calc(-1 * var(--gut));padding:4px var(--gut) 6px;scroll-padding-inline:var(--gut);scroll-snap-type:x proximity}
+.recs-row::-webkit-scrollbar{display:none}
+.rec{flex:0 0 112px;display:flex;flex-direction:column;gap:5px;border:0;background:none;padding:0;font:inherit;color:var(--ink);text-align:left;cursor:pointer;scroll-snap-align:start}
+.rec:focus-visible{outline:1.5px solid var(--accent);outline-offset:3px}
+.rec .rc{aspect-ratio:5/7;overflow:hidden;background:var(--sheet-side);box-shadow:0 0 0 1px var(--edge),5px 9px 18px -10px var(--shadow)}
+.rec .rc img{width:100%;height:100%;object-fit:cover;display:block;filter:var(--art)}
+.rec .rt{margin-top:3px;font-size:13px;letter-spacing:.08em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rec .ra{font-size:11px;letter-spacing:.06em;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rec .rs{font-family:var(--f-mono);font-size:9px;letter-spacing:.1em;color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rec.sk{cursor:default}
+.rec.sk .rc,.rec.sk .rt,.rec.sk .ra{background:linear-gradient(90deg,var(--sheet-side) 25%,var(--sheet) 50%,var(--sheet-side) 75%);background-size:300% 100%;animation:shimmer 1.3s ease-in-out infinite;box-shadow:none}
+.rec.sk .rt{height:12px;width:80%;border-radius:3px}
+.rec.sk .ra{height:10px;width:50%;border-radius:3px}
+@keyframes shimmer{from{background-position:100% 0}to{background-position:0 0}}
+.recs-empty{display:flex;align-items:center;gap:10px;padding:14px 16px;border-radius:12px;background:var(--sheet);box-shadow:0 0 0 1px var(--edge);font-size:13px;letter-spacing:.06em;color:var(--ink-2)}
+.recs-empty span{flex:1}
+.recs-empty .txt-btn{color:var(--accent)}
+@media (min-width:600px){ .rec{flex-basis:132px} }
+@media (prefers-reduced-motion:reduce){ .rec.sk .rc,.rec.sk .rt,.rec.sk .ra,.rf.spin svg{animation:none} }
 </style>
 
 <main class="app">
@@ -408,7 +541,7 @@ h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
       <div class="mast-row"><span class="word">笔记</span><span class="eyebrow">Marginalia</span></div>
       <div class="region"><span class="eyebrow">Highlights / Thoughts</span><span class="rule"></span><span class="dot"></span></div>
       <div class="pills" id="noteFilter" role="radiogroup" aria-label="笔记类型"></div>
-      <span class="sub" id="noteSum"></span>
+      <span class="nsum" id="noteSum"></span>
     </header>
     <div class="note-list" id="noteList"></div>
   </section>
@@ -424,6 +557,7 @@ h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
       <div class="lib-tabs" id="libTabs" role="tablist" aria-label="阅读状态"></div>
     </header>
     <div class="lib-body">
+      <section class="recs" id="recs" aria-label="书源推荐"></section>
       <div class="groups" id="libGroups"></div>
       <label class="import" for="importFile">
         <span class="plus"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span>
@@ -437,7 +571,7 @@ h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
 
   <section class="view scroll" data-view="me" aria-label="我的">
     <header class="mast">
-      <div class="mast-row"><span class="word">我的</span><span class="eyebrow">Reader</span></div>
+      <div class="mast-row has-add"><span class="word">我的</span><button class="add-blk" id="openSources" type="button" aria-label="书源管理"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></div>
       <div class="profile">
         <span class="avatar" aria-hidden="true"></span>
         <span class="who"><b>读者</b><small id="meCounts"></small></span>
@@ -461,6 +595,37 @@ h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
     </div>
   </section>
   </div>
+
+  <section class="sub" id="srcPage" aria-label="书源管理">
+    <div class="sub-in">
+      <div class="sub-top">
+        <button class="back" type="button" id="srcBack" aria-label="返回"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+        <span class="ttl"><b>书源</b><small id="srcCount">Sources</small></span>
+        <button class="txt-btn" type="button" id="srcSelect">选择</button>
+        <button class="add-blk" type="button" id="srcAdd" aria-label="添加书源"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+      </div>
+      <div class="src-tools">
+        <label class="search" for="srcSearch">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
+          <span class="sr">搜索书源</span>
+          <input id="srcSearch" type="search" placeholder="名称、网址" autocomplete="off">
+        </label>
+        <button class="sortb" type="button" id="srcSort" aria-label="排序方式"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"/></svg><span id="srcSortLbl">名称</span></button>
+      </div>
+      <div class="src-chips" id="srcChips" role="radiogroup" aria-label="筛选书源"></div>
+      <div class="src-list" id="srcList"></div>
+    </div>
+    <div class="selbar" id="selbar">
+      <span class="cnt" id="selCnt"></span>
+      <button class="txt-btn" type="button" data-sel="all">全选</button>
+      <button class="txt-btn" type="button" data-sel="invert">反选</button>
+      <button class="txt-btn" type="button" data-sel="off">停用</button>
+      <button class="txt-btn danger" type="button" data-sel="del">删除</button>
+    </div>
+    <div class="scrim" id="srcScrim"></div>
+    <div class="asheet" id="addSheet" role="dialog" aria-label="添加书源"></div>
+    <input id="srcFile" type="file" accept=".json,.txt,application/json,text/plain" class="sr" tabindex="-1">
+  </section>
 
   <div class="veil" id="veil"></div>
   <button class="close" id="closeBtn" type="button" aria-label="放回书架">
@@ -1085,6 +1250,7 @@ function renderLibrary(animate){
     <span class="pb"><i style="transform:scaleX(${b.progress / 100})"></i></span>
     <span class="st">${b.state === "reading" ? b.progress + "%" : STATE_TXT[b.state]}</span></button>`).join("");
   document.getElementById("libEmpty").hidden = list.length > 0;
+  renderRecs();
   if (animate) stagger([...document.querySelectorAll("#libGrid [data-st]")].slice(0, 12), 0, 8);
 }
 document.getElementById("libTabs").addEventListener("click", e => { const b = e.target.closest("[data-k]"); if (!b) return; libState = b.dataset.k; renderLibrary(true); });
@@ -1154,9 +1320,365 @@ document.getElementById("meRows").addEventListener("click", e => {
 });
 document.getElementById("filter").addEventListener("click", () => toast("分组切换：下一步设计"));
 
+/* ================= 书源管理 ================= */
+const srcPage = document.getElementById("srcPage"), srcList = document.getElementById("srcList");
+const addSheet = document.getElementById("addSheet"), srcScrim = document.getElementById("srcScrim");
+const SEED_SOURCES = [
+  { name: "Project Gutenberg 公版书", url: "https://www.gutenberg.org/ebooks.opds/", type: "OPDS", group: "公版书", on: true, st: "ok", ms: 182 },
+  { name: "Standard Ebooks", url: "https://standardebooks.org/feeds/opds", type: "OPDS", group: "公版书", on: true, st: "ok", ms: 240 },
+  { name: "维基文库 · 中文古籍", url: "https://zh.wikisource.org", type: "网页", group: "公版书", on: true, st: "slow", ms: 1260 },
+  { name: "我的 Calibre 书库", url: "http://192.168.1.20:8080/opds", type: "OPDS", group: "自建", on: true, st: "ok", ms: 36 },
+  { name: "家用 NAS · 电子书", url: "https://nas.local:5006/books", type: "WebDAV", group: "自建", on: false, st: "bad", ms: 0 },
+  { name: "坚果云 · 读书同步", url: "https://dav.jianguoyun.com/dav/books", type: "WebDAV", group: "网盘", on: true, st: "ok", ms: 310 },
+  { name: "Internet Archive 公版馆藏", url: "https://archive.org/services/opds", type: "OPDS", group: "公版书", on: false, st: "slow", ms: 2140 },
+  { name: "Feedbooks 公版", url: "https://catalog.feedbooks.com/publicdomain/browse/top.atom", type: "OPDS", group: "公版书", on: true, st: "ok", ms: 420 }
+];
+let sources;
+try { sources = JSON.parse(localStorage.getItem("shelf-sources") || "null"); } catch (_) {}
+if (!Array.isArray(sources)) sources = SEED_SOURCES.map((s, i) => ({ ...s, id: "s" + i, added: i }));
+let srcFilter = "all", srcQ = "", srcSort = "az", selecting = false, picked = new Set(), menuEl = null;
+const saveSources = () => { try { localStorage.setItem("shelf-sources", JSON.stringify(sources)); } catch (_) {} };
+const hostOf = u => { try { return new URL(u).host; } catch (_) { return u; } };
+const esc = t => String(t).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const SORTS = { az: "名称", recent: "最近添加", ok: "响应速度" };
+const statusTxt = s => s.st === "wait" ? "测试中" : s.st === "bad" ? "无法连接" : s.ms >= 1000 ? (s.ms / 1000).toFixed(1) + " s" : s.ms + " ms";
+
+function visibleSources(){
+  const q = srcQ.trim().toLowerCase();
+  let list = sources.filter(s =>
+    (srcFilter === "all" || (srcFilter === "on" ? s.on : srcFilter === "off" ? !s.on : s.type === srcFilter)) &&
+    (!q || s.name.toLowerCase().includes(q) || s.url.toLowerCase().includes(q)));
+  const rank = s => s.st === "bad" ? 1e9 : s.ms;
+  list.sort(srcSort === "az" ? (a, b) => a.name.localeCompare(b.name, "zh") : srcSort === "recent" ? (a, b) => b.added - a.added : (a, b) => rank(a) - rank(b));
+  return list.sort((a, b) => (b.pin ? 1 : 0) - (a.pin ? 1 : 0));
+}
+function renderSources(animate){
+  const on = sources.filter(s => s.on).length;
+  document.getElementById("srcCount").textContent = `Sources · ${on} / ${sources.length} 启用`;
+  const types = [...new Set(sources.map(s => s.type))];
+  document.getElementById("srcChips").innerHTML = [["all", "全部", sources.length], ["on", "已启用", on], ["off", "已停用", sources.length - on],
+    ...types.map(t => [t, t, sources.filter(s => s.type === t).length])]
+    .map(([k, l, n]) => `<button class="pill" type="button" role="radio" aria-checked="${k === srcFilter}" data-f="${esc(k)}">${esc(l)}<small>${n}</small></button>`).join("");
+  document.getElementById("srcSortLbl").textContent = SORTS[srcSort];
+  const list = visibleSources();
+  const check = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="m2.5 6.2 2.3 2.3 4.7-5"/></svg>';
+  srcList.innerHTML = list.length ? list.map(s => `<div class="src${s.on ? "" : " off"}" data-id="${s.id}" data-st>
+      <button class="chk" type="button" role="checkbox" aria-checked="${picked.has(s.id)}" aria-label="选择 ${esc(s.name)}" tabindex="${selecting ? 0 : -1}"><i>${check}</i></button>
+      <button class="main" type="button" data-act="row"><span class="nm">${s.pin ? "↑ " : ""}${esc(s.name)}</span>
+        <span class="mt"><span class="tag">${esc(s.type)}</span><span class="host">${esc(hostOf(s.url))}</span><span class="stt ${s.st}">${statusTxt(s)}</span></span></button>
+      <button class="tog" type="button" role="switch" aria-checked="${s.on}" aria-label="启用 ${esc(s.name)}" data-act="tog"><span class="switch" aria-hidden="true"></span></button>
+      <button class="more" type="button" aria-label="更多操作" data-act="more"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5.5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="18.5" r="1.6"/></svg></button>
+    </div>`).join("")
+    : `<p class="src-empty">${sources.length ? "没有符合条件的书源" : "还没有书源<br>点右上角的加号添加第一个"}</p>`;
+  updateSelbar();
+  if (animate) stagger([...srcList.querySelectorAll("[data-st]")].slice(0, 12), 60, 8);
+}
+function updateSelbar(){
+  const n = picked.size;
+  document.getElementById("selCnt").innerHTML = `已选 <b>${n}</b> / ${visibleSources().length}`;
+  document.querySelectorAll("#selbar [data-sel=off], #selbar [data-sel=del]").forEach(b => b.disabled = !n);
+}
+
+/* page in / out */
+function openSources(){
+  if (sel >= 0) return;
+  srcPage.classList.add("on");
+  renderSources();
+  srcPage.animate([{ transform: "translateX(100%)", boxShadow: "-30px 0 60px -30px rgba(0,0,0,0)" }, { transform: "none", boxShadow: "-30px 0 60px -30px rgba(0,0,0,.25)" }],
+    { duration: ms(480) || 1, easing: EASE_OUT });
+  viewEl(curView).animate([{ transform: "none", opacity: 1 }, { transform: "translateX(-24%)", opacity: .6 }], { duration: ms(480) || 1, easing: EASE_OUT });
+  stagger([...srcList.querySelectorAll("[data-st]")].slice(0, 10), 160, 10);
+  setTimeout(() => document.getElementById("srcBack").focus({ preventScroll: true }), ms(300));
+}
+function closeSources(){
+  closeMenu(); setSelecting(false);
+  if (recSig !== null && recSig !== srcSig()) setTimeout(() => toast("书源有变化，书库推荐会自动刷新"), ms(400));
+  srcPage.animate([{ transform: "none" }, { transform: "translateX(100%)" }], { duration: ms(380) || 1, easing: "cubic-bezier(.4,0,.6,1)" })
+    .finished.then(() => srcPage.classList.remove("on"));
+  viewEl(curView).animate([{ transform: "translateX(-24%)", opacity: .6 }, { transform: "none", opacity: 1 }], { duration: ms(380) || 1, easing: "cubic-bezier(.4,0,.6,1)" });
+  document.getElementById("openSources").focus({ preventScroll: true });
+}
+document.getElementById("openSources").addEventListener("click", openSources);
+document.getElementById("srcBack").addEventListener("click", closeSources);
+
+/* filtering, search, sort */
+document.getElementById("srcChips").addEventListener("click", e => { const b = e.target.closest("[data-f]"); if (!b) return; srcFilter = b.dataset.f; picked.clear(); renderSources(true); });
+document.getElementById("srcSearch").addEventListener("input", e => { srcQ = e.target.value; renderSources(); });
+document.getElementById("srcSort").addEventListener("click", () => {
+  const ks = Object.keys(SORTS); srcSort = ks[(ks.indexOf(srcSort) + 1) % ks.length];
+  renderSources(true); toast("按" + SORTS[srcSort] + "排序");
+});
+
+/* selection mode */
+function setSelecting(v){
+  selecting = v; if (!v) picked.clear();
+  srcPage.classList.toggle("selecting", v);
+  document.getElementById("srcSelect").textContent = v ? "完成" : "选择";
+  srcList.querySelectorAll(".chk").forEach(c => { c.setAttribute("aria-checked", picked.has(c.closest(".src").dataset.id)); c.tabIndex = v ? 0 : -1; });
+  updateSelbar();
+}
+document.getElementById("srcSelect").addEventListener("click", () => { closeMenu(); setSelecting(!selecting); });
+document.getElementById("selbar").addEventListener("click", e => {
+  const b = e.target.closest("[data-sel]"); if (!b || b.disabled) return;
+  const vis = visibleSources().map(s => s.id), k = b.dataset.sel;
+  if (k === "all") vis.forEach(id => picked.add(id));
+  if (k === "invert") vis.forEach(id => picked.has(id) ? picked.delete(id) : picked.add(id));
+  if (k === "off") { sources.forEach(s => { if (picked.has(s.id)) s.on = false; }); toast(`已停用 ${picked.size} 个书源`); saveSources(); picked.clear(); renderSources(); return; }
+  if (k === "del") {
+    if (b.dataset.armed !== "1") { b.dataset.armed = "1"; b.textContent = `确认删除 ${picked.size}`; setTimeout(() => { b.dataset.armed = ""; b.textContent = "删除"; }, 2600); return; }
+    b.dataset.armed = ""; b.textContent = "删除";
+    const n = picked.size, rows = [...srcList.querySelectorAll(".src")].filter(r => picked.has(r.dataset.id));
+    Promise.all(rows.map(r => r.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "translateX(-24px)" }], { duration: ms(260) || 1, easing: "ease-in", fill: "forwards" }).finished))
+      .then(() => { sources = sources.filter(s => !picked.has(s.id)); picked.clear(); saveSources(); setSelecting(false); renderSources(); toast(`已删除 ${n} 个书源`); });
+    return;
+  }
+  srcList.querySelectorAll(".chk").forEach(c => c.setAttribute("aria-checked", picked.has(c.closest(".src").dataset.id)));
+  updateSelbar();
+});
+
+/* rows: toggle, check, menu */
+function testSource(s){
+  s.st = "wait"; renderSources();
+  setTimeout(() => {
+    const r = Math.random(); s.st = r < .12 ? "bad" : r < .3 ? "slow" : "ok";
+    s.ms = s.st === "bad" ? 0 : s.st === "slow" ? 1000 + Math.round(Math.random() * 1500) : 30 + Math.round(Math.random() * 500);
+    saveSources(); renderSources(); toast(s.st === "bad" ? `「${s.name}」无法连接` : `「${s.name}」响应 ${statusTxt(s)}（原型模拟）`);
+  }, 900 + Math.random() * 700);
+}
+srcList.addEventListener("click", e => {
+  const row = e.target.closest(".src"); if (!row) return;
+  const s = sources.find(x => x.id === row.dataset.id), act = e.target.closest("[data-act]")?.dataset.act;
+  if (selecting || e.target.closest(".chk")) {
+    if (!selecting) return;
+    picked.has(s.id) ? picked.delete(s.id) : picked.add(s.id);
+    row.querySelector(".chk").setAttribute("aria-checked", picked.has(s.id)); updateSelbar(); return;
+  }
+  if (act === "tog") { s.on = !s.on; saveSources(); row.classList.toggle("off", !s.on); e.target.closest(".tog").setAttribute("aria-checked", s.on);
+    document.getElementById("srcCount").textContent = `Sources · ${sources.filter(x => x.on).length} / ${sources.length} 启用`; return; }
+  if (act === "more") { openMenu(e.target.closest(".more"), s); return; }
+  if (act === "row") toast(`编辑「${s.name}」：规则编辑器下一步设计`);
+});
+/* long-press a row to start selecting, as in most list apps */
+let lpT = 0;
+srcList.addEventListener("pointerdown", e => { const row = e.target.closest(".src"); if (!row || selecting || e.target.closest(".tog,.more")) return;
+  lpT = setTimeout(() => { setSelecting(true); picked.add(row.dataset.id); row.querySelector(".chk").setAttribute("aria-checked", true); updateSelbar(); if (navigator.vibrate) try { navigator.vibrate(10); } catch (_) {} }, 520); });
+["pointerup", "pointercancel", "pointerleave", "scroll"].forEach(t => srcList.addEventListener(t, () => clearTimeout(lpT), true));
+
+function openMenu(btn, s){
+  closeMenu();
+  const r = btn.getBoundingClientRect(), pr = srcPage.getBoundingClientRect();
+  menuEl = document.createElement("div"); menuEl.className = "menu"; menuEl.setAttribute("role", "menu");
+  menuEl.innerHTML = `<button type="button" role="menuitem" data-m="edit">编辑规则</button>
+    <button type="button" role="menuitem" data-m="test">测试连接</button>
+    <button type="button" role="menuitem" data-m="pin">${s.pin ? "取消置顶" : "置顶"}</button>
+    <button type="button" role="menuitem" data-m="copy">复制链接</button>
+    <button type="button" role="menuitem" data-m="del" class="danger">删除</button>`;
+  srcPage.appendChild(menuEl);
+  const top = Math.min(r.bottom - pr.top + 4, pr.height - menuEl.offsetHeight - 12);
+  Object.assign(menuEl.style, { top: top + "px", right: (pr.right - r.right + 4) + "px" });
+  menuEl.animate([{ opacity: 0, transform: "scale(.92) translateY(-6px)" }, { opacity: 1, transform: "none" }], { duration: ms(260) || 1, easing: EASE_OUT });
+  menuEl.addEventListener("click", ev => {
+    const m = ev.target.closest("[data-m]")?.dataset.m; if (!m) return; closeMenu();
+    if (m === "edit") toast(`编辑「${s.name}」：规则编辑器下一步设计`);
+    if (m === "test") testSource(s);
+    if (m === "pin") { s.pin = !s.pin; saveSources(); renderSources(true); }
+    if (m === "copy") { navigator.clipboard?.writeText(s.url).then(() => toast("已复制链接"), () => toast(s.url)); }
+    if (m === "del") { sources = sources.filter(x => x !== s); saveSources(); renderSources(); toast(`已删除「${s.name}」`); }
+  });
+  menuEl.querySelector("button").focus({ preventScroll: true });
+}
+function closeMenu(){ if (!menuEl) return; const m = menuEl; menuEl = null;
+  m.animate([{ opacity: 1 }, { opacity: 0, transform: "scale(.96)" }], { duration: 140, fill: "forwards" }).finished.then(() => m.remove()); }
+srcPage.addEventListener("pointerdown", e => { if (menuEl && !e.target.closest(".menu") && !e.target.closest(".more")) closeMenu(); });
+
+/* add sheet: 新建 / 本地导入 / 网络导入 / 扫码导入 / 帮助 */
+const ic = {
+  new: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 19h14"/><path d="M14.5 4.5 18 8l-8 8H6.5v-3.5z"/></svg>',
+  file: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M7 3.5h7l4 4v13H7z"/><path d="M14 3.5v4h4M12.5 11v6M10 14.5l2.5 2.5 2.5-2.5"/></svg>',
+  link: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>',
+  qr: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4z"/><path d="M14 14h2v2h-2zM18 18h2v2h-2zM18 14h2M14 18v2"/></svg>'
+};
+let sheetOpen = false;
+function sheetHome(){
+  addSheet.innerHTML = `<span class="grab"></span>
+    <h3>添加书源<small>新建、导入或扫码</small></h3>
+    <div class="tiles">
+      <button class="tile" type="button" data-add="new"><span class="ic">${ic.new}</span><b>新建书源</b><small>手动填写名称、网址和解析规则</small></button>
+      <button class="tile" type="button" data-add="file"><span class="ic">${ic.file}</span><b>本地导入</b><small>选择 .json 书源文件，可一次导入多个</small></button>
+      <button class="tile" type="button" data-add="link"><span class="ic">${ic.link}</span><b>网络导入</b><small>粘贴书源或订阅地址</small></button>
+      <button class="tile" type="button" data-add="qr"><span class="ic">${ic.qr}</span><b>扫码导入</b><small>扫描别人分享的书源二维码</small></button>
+    </div>
+    <button class="help" type="button" data-add="help"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M9.8 9.5a2.3 2.3 0 1 1 3.2 2.1c-.7.3-1 .8-1 1.5v.4M12 16.5v.2"/></svg>书源是什么、怎么写</button>`;
+}
+function sheetLink(){
+  addSheet.innerHTML = `<span class="grab"></span>
+    <h3>网络导入<small>支持 http / https 链接，一行一个</small></h3>
+    <form class="urlform" id="urlForm" novalidate>
+      <label for="srcUrl">书源链接</label>
+      <textarea id="srcUrl" placeholder="https://example.com/opds" autocomplete="off" spellcheck="false"></textarea>
+      <span class="err" id="urlErr" role="alert"></span>
+      <div class="acts"><button class="btn" type="button" data-add="home">返回</button><button class="btn primary" type="submit">导入</button></div>
+    </form>`;
+  const ta = addSheet.querySelector("#srcUrl");
+  setTimeout(() => ta.focus(), ms(200));
+  addSheet.querySelector("#urlForm").addEventListener("submit", ev => {
+    ev.preventDefault();
+    const lines = ta.value.split(/\s+/).filter(Boolean), bad = lines.filter(l => !/^https?:\/\/[^\s/]+\.[^\s]+/i.test(l) && !/^https?:\/\/[\d.]+(:\d+)?/i.test(l));
+    const err = addSheet.querySelector("#urlErr");
+    if (!lines.length) { err.textContent = "先粘贴一个链接"; return; }
+    if (bad.length) { err.textContent = `这不是有效的链接：${bad[0].slice(0, 40)}`; return; }
+    const btn = addSheet.querySelector("[type=submit]"); btn.disabled = true; btn.textContent = "导入中…";
+    setTimeout(() => { addSources(lines.map(u => ({ name: hostOf(u).replace(/^www\./, ""), url: u }))); closeSheet(); }, 700);
+  });
+}
+function openSheet(){
+  closeMenu(); sheetOpen = true; sheetHome();
+  srcScrim.classList.add("on");
+  addSheet.animate([{ transform: "translateY(105%)" }, { transform: "none" }], { duration: ms(520) || 1, easing: EASE_OUT, fill: "forwards" });
+  stagger([...addSheet.querySelectorAll(".tile")], 140, 14);
+}
+function closeSheet(){
+  if (!sheetOpen) return; sheetOpen = false;
+  srcScrim.classList.remove("on");
+  addSheet.animate([{ transform: "none" }, { transform: "translateY(105%)" }], { duration: ms(320) || 1, easing: "cubic-bezier(.4,0,.8,.4)", fill: "forwards" });
+}
+document.getElementById("srcAdd").addEventListener("click", openSheet);
+srcScrim.addEventListener("click", closeSheet);
+addSheet.addEventListener("click", e => {
+  const k = e.target.closest("[data-add]")?.dataset.add; if (!k) return;
+  if (k === "new") { closeSheet(); toast("新建书源：规则编辑器下一步设计"); }
+  if (k === "file") document.getElementById("srcFile").click();
+  if (k === "link") { sheetLink(); stagger([...addSheet.querySelectorAll(".urlform > *")], 0, 8); }
+  if (k === "home") { sheetHome(); stagger([...addSheet.querySelectorAll(".tile")], 0, 10); }
+  if (k === "qr") toast("扫码需要相机，安装版里接入");
+  if (k === "help") toast("书源帮助：下一步设计");
+});
+function guessType(u){ return /opds|\.atom|feed/i.test(u) ? "OPDS" : /dav/i.test(u) ? "WebDAV" : "网页"; }
+function addSources(list){
+  const t = Date.now(), fresh = [];
+  list.forEach((x, i) => {
+    if (!x.url || sources.some(s => s.url === x.url)) return;
+    fresh.push({ id: "n" + t + i, name: x.name || hostOf(x.url), url: x.url, type: x.type || guessType(x.url), group: x.group || "", on: true, st: "ok", ms: 120 + Math.round(Math.random() * 400), added: t + i });
+  });
+  sources = sources.concat(fresh); saveSources();
+  srcFilter = "all"; srcSort = "recent"; renderSources();
+  srcList.querySelectorAll(".src").forEach(r => { if (fresh.some(f => f.id === r.dataset.id))
+    r.animate([{ backgroundColor: "color-mix(in oklab, var(--accent) 18%, transparent)" }, { backgroundColor: "transparent" }], { duration: 1600, easing: "ease-out" }); });
+  toast(fresh.length ? `已添加 ${fresh.length} 个书源${list.length > fresh.length ? `，跳过 ${list.length - fresh.length} 个重复` : ""}` : "这些书源已经在列表里了");
+}
+document.getElementById("srcFile").addEventListener("change", e => {
+  const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    let data; try { data = JSON.parse(rd.result); } catch (_) { toast("文件不是有效的书源 JSON"); return; }
+    const arr = (Array.isArray(data) ? data : [data]).map(o => ({
+      name: o.bookSourceName || o.sourceName || o.name || o.title, url: o.bookSourceUrl || o.sourceUrl || o.url,
+      group: o.bookSourceGroup || o.group || "" })).filter(o => o.url);
+    if (!arr.length) { toast("文件里没有找到书源"); return; }
+    closeSheet(); addSources(arr);
+  };
+  rd.onerror = () => toast("读取文件失败");
+  rd.readAsText(f);
+});
+addEventListener("keydown", e => { if (e.key === "Escape") { if (menuEl) closeMenu(); else if (sheetOpen) closeSheet(); else if (srcPage.classList.contains("on")) { if (selecting) setSelecting(false); else closeSources(); } } });
+
+/* ================= 书库 · 书源推荐 (refreshes when enabled sources change) ================= */
+const REC_POOL = [
+  { t: "傲慢与偏见", a: "简·奥斯汀", k: "gutenberg" }, { t: "白鲸", a: "赫尔曼·梅尔维尔", k: "gutenberg" }, { t: "爱丽丝漫游奇境", a: "刘易斯·卡罗尔", k: "gutenberg" },
+  { t: "了不起的盖茨比", a: "菲茨杰拉德", k: "standardebooks" }, { t: "弗兰肯斯坦", a: "玛丽·雪莱", k: "standardebooks" },
+  { t: "红楼梦", a: "曹雪芹", k: "wikisource" }, { t: "西游记", a: "吴承恩", k: "wikisource" }, { t: "呐喊", a: "鲁迅", k: "wikisource" }, { t: "朝花夕拾", a: "鲁迅", k: "wikisource" },
+  { t: "时间机器", a: "H. G. 威尔斯", k: "feedbooks" }, { t: "海底两万里", a: "儒勒·凡尔纳", k: "feedbooks" },
+  { t: "聊斋志异", a: "蒲松龄", k: "archive" }, { t: "简·爱", a: "夏洛蒂·勃朗特", k: "archive" },
+  { t: "骆驼祥子", a: "老舍", k: "" }, { t: "浮生六记", a: "沈复", k: "" }, { t: "人间词话", a: "王国维", k: "" }, { t: "格林童话", a: "格林兄弟", k: "" }
+];
+const REC_COLORS = [["#5b2b2a", "#e9d9c3"], ["#23324a", "#e6dcc6"], ["#2f4a3a", "#ece3cc"], ["#8a5a3b", "#f4ead8"], ["#3c3f46", "#e8e2d4"], ["#6b4e71", "#efe4d6"], ["#1f2024", "#d9b97a"]];
+const recCovers = new Map();
+function recCover(r){
+  if (recCovers.has(r.t)) return recCovers.get(r.t);
+  const W = 240, H = 336, c = document.createElement("canvas"); c.width = W; c.height = H; const g = c.getContext("2d");
+  let h = 0; for (const ch of r.t) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  const [bg, fg] = REC_COLORS[h % REC_COLORS.length];
+  g.fillStyle = bg; g.fillRect(0, 0, W, H);
+  g.strokeStyle = fg; g.globalAlpha = .55; g.lineWidth = 1; g.strokeRect(14.5, 14.5, W - 29, H - 29); g.strokeRect(19.5, 19.5, W - 39, H - 39); g.globalAlpha = 1;
+  g.fillStyle = fg; g.textAlign = "center";
+  const cn = /[一-鿿]/.test(r.t);
+  if (cn && r.t.length <= 6) {               // vertical title, like a thread-bound edition
+    g.font = '600 30px "Noto Serif SC", serif';
+    [...r.t].forEach((ch, i) => g.fillText(ch, W / 2, 84 + i * 38));
+  } else {
+    g.font = '600 24px "Noto Serif SC", serif';
+    const chars = [...r.t], lines = []; for (let i = 0; i < chars.length; i += 5) lines.push(chars.slice(i, i + 5).join(""));
+    lines.forEach((l, i) => g.fillText(l, W / 2, 112 + i * 34));
+  }
+  g.globalAlpha = .7; g.beginPath(); g.arc(W / 2, H - 82, 5, 0, 7); g.fill(); g.globalAlpha = 1;
+  g.font = '400 13px "Noto Serif SC", serif'; g.fillText(r.a, W / 2, H - 50);
+  const img = g.getImageData(0, 0, W, H), d = img.data;      // paper grain
+  for (let i = 0; i < d.length; i += 4) { const n = (Math.random() - .5) * 12; d[i] += n; d[i + 1] += n; d[i + 2] += n; }
+  g.putImageData(img, 0, 0);
+  const url = c.toDataURL("image/jpeg", .85); recCovers.set(r.t, url); return url;
+}
+const srcSig = () => sources.filter(s => s.on).map(s => s.id).sort().join(",");
+let recSig = null, recItems = [], recAt = 0, recLoading = false, wanted = new Set();
+function pickRecs(){
+  const on = sources.filter(s => s.on), out = [], used = new Set();
+  const generic = REC_POOL.filter(r => !r.k).sort(() => Math.random() - .5);
+  on.forEach(s => {
+    const host = s.url.toLowerCase();
+    let mine = REC_POOL.filter(r => r.k && host.includes(r.k)).sort(() => Math.random() - .5);
+    if (!mine.length) mine = generic.filter(r => !used.has(r.t));
+    mine.slice(0, 3).forEach(r => { if (!used.has(r.t)) { used.add(r.t); out.push({ ...r, src: s.name }); } });
+  });
+  return out.sort(() => Math.random() - .5).slice(0, 12);
+}
+function recHead(n){
+  const ago = Math.round((Date.now() - recAt) / 60000);
+  return `<div class="recs-h"><span class="recs-t"><b>书源推荐</b><small>${recLoading ? "正在从书源获取…" : `来自 ${n} 个书源 · ${ago < 1 ? "刚刚更新" : ago + " 分钟前"}`}</small></span>
+    <button class="txt-btn rf${recLoading ? " spin" : ""}" type="button" id="recRefresh" aria-label="刷新推荐"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v4.5h-4.5"/></svg>刷新</button></div>`;
+}
+function renderRecs(){
+  const box = document.getElementById("recs");
+  const on = sources.filter(s => s.on).length;
+  if (libState !== "all" || libQ.trim()) { box.hidden = true; return; }
+  box.hidden = false;
+  if (!on) { box.innerHTML = `<div class="recs-empty"><span>还没有启用的书源，书库只显示本地书。</span><button class="txt-btn" type="button" id="recGo">去添加书源</button></div>`; return; }
+  if (recSig !== srcSig()) { refreshRecs(); return; }
+  box.innerHTML = recHead(on) + `<div class="recs-row">${recItems.map((r, i) => `<button class="rec" type="button" data-rec="${i}" aria-label="${esc(r.t)}，${esc(r.a)}，来自 ${esc(r.src)}">
+      <span class="rc"><img alt="" src="${recCover(r)}"></span><span class="rt">${esc(r.t)}</span><span class="ra">${esc(r.a)}</span>
+      <span class="rs">${wanted.has(r.t) ? "✓ 已加入想读" : esc(r.src)}</span></button>`).join("")}</div>`;
+}
+function refreshRecs(){
+  const box = document.getElementById("recs"), on = sources.filter(s => s.on).length;
+  recLoading = true; recSig = srcSig();
+  box.innerHTML = recHead(on) + `<div class="recs-row">${Array.from({ length: 5 }, () => `<span class="rec sk"><span class="rc"></span><span class="rt"></span><span class="ra"></span></span>`).join("")}</div>`;
+  const items = pickRecs();
+  setTimeout(() => {                         // "covers arrive": each one lands a beat after the last
+    recItems = items; recAt = Date.now(); recLoading = false;
+    if (curView !== "library") return;
+    renderRecs();
+    document.querySelectorAll("#recs .rec").forEach((el, i) => {
+      el.animate([{ opacity: 0, transform: "translateY(10px)" }, { opacity: 1, transform: "none" }], { duration: ms(520) || 1, delay: ms(i * 70), easing: EASE_OUT, fill: "backwards" });
+      el.querySelector("img").animate([{ opacity: 0, filter: "blur(10px)", transform: "scale(1.04)" }, { opacity: 1, filter: "blur(0)", transform: "none" }],
+        { duration: ms(700) || 1, delay: ms(160 + i * 110 + Math.random() * 120), easing: EASE_OUT, fill: "backwards" });
+    });
+  }, reduce ? 0 : 900 + Math.random() * 500);
+}
+document.getElementById("recs").addEventListener("click", e => {
+  if (e.target.closest("#recRefresh")) { if (!recLoading) refreshRecs(); return; }
+  if (e.target.closest("#recGo")) { switchTo("me"); setTimeout(openSources, ms(500)); return; }
+  const c = e.target.closest("[data-rec]"); if (!c) return;
+  const r = recItems[+c.dataset.rec];
+  if (wanted.has(r.t)) { toast(`《${r.t}》已在想读里`); return; }
+  wanted.add(r.t); c.querySelector(".rs").textContent = "✓ 已加入想读";
+  c.querySelector(".rc").animate([{ transform: "none" }, { transform: "translateY(-6px) rotate(-2deg)" }, { transform: "none" }], { duration: ms(480) || 1, easing: "cubic-bezier(.3,1.5,.5,1)" });
+  toast(`《${r.t}》已加入想读 · 来自 ${r.src}`);
+});
+
 /* system back (Android app shell calls this): close the open book, else return to the shelf */
 window.__back = () => {
   if (sel >= 0) { closeBook(); return true; }
+  if (menuEl) { closeMenu(); return true; }
+  if (sheetOpen) { closeSheet(); return true; }
+  if (srcPage.classList.contains("on")) { if (selecting) setSelecting(false); else closeSources(); return true; }
   if (curView !== "shelf") { switchTo("shelf"); return true; }
   return false;
 };
