@@ -658,7 +658,7 @@ h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
 }
 
 /* ---------- 书库 · 发现 ---------- */
-#discPane[hidden],#minePane[hidden]{display:none}
+#discPane[hidden],#minePane[hidden],#searchPane[hidden],#libSeg[hidden]{display:none}
 .lib-seg{position:relative;display:inline-flex;align-self:flex-start;margin-top:18px;padding:4px;border-radius:999px;background:color-mix(in oklab,var(--ink) 6%,transparent)}
 .lib-seg button{position:relative;z-index:1;height:34px;padding:0 20px;border:0;border-radius:999px;background:none;font:inherit;font-size:14px;letter-spacing:.2em;color:var(--ink-2);cursor:pointer;transition:color .3s}
 .lib-seg button[aria-selected="true"]{color:var(--ink)}
@@ -786,6 +786,32 @@ h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
 .rec.feat .want{position:absolute;bottom:12px;left:calc(12px + 96px + 14px)}
 @media (min-width:600px){ .rec.feat .want{bottom:16px;left:calc(16px + 124px + 18px)} }
 .rec.feat .ropen .rd{-webkit-line-clamp:3}
+
+/* ---------- 书库 · 全局搜索 (gsx-) ---------- */
+.gsx{gap:16px}
+.gsx-head{display:flex;align-items:flex-end;gap:10px}
+.gsx-head .recs-t{flex:1;min-width:0}
+.gsx-prog{height:2px;background:var(--ink-3);overflow:hidden;margin-top:-6px}
+.gsx-prog i{display:block;height:100%;background:var(--accent);transform-origin:0 50%;transition:transform .4s}
+.gsx-sec{display:flex;flex-direction:column}
+.gsx-st{font-family:var(--f-mono);font-size:10px;letter-spacing:.2em;color:var(--ink-2);padding:6px 0 8px;border-bottom:1px solid var(--ink-3)}
+.gsx-r{width:100%;display:flex;align-items:center;gap:14px;padding:12px 0;border:0;border-bottom:1px solid var(--ink-3);background:none;font:inherit;color:var(--ink);text-align:left;cursor:pointer;animation:gsx-in .45s cubic-bezier(.16,1,.3,1)}
+@keyframes gsx-in{from{opacity:0;transform:translateY(6px)}}
+.gsx-r:focus-visible{outline:1.5px solid var(--accent);outline-offset:2px}
+.gsx-c{width:44px;flex-shrink:0;aspect-ratio:5/7;overflow:hidden;background:var(--sheet-side);box-shadow:0 0 0 1px var(--edge),3px 5px 10px -6px var(--shadow)}
+.gsx-c img{width:100%;height:100%;object-fit:cover;display:block;filter:var(--art)}
+.gsx-i{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.gsx-i b{font-weight:500;font-size:15px;letter-spacing:.08em}
+.gsx-i small{font-size:11.5px;letter-spacing:.06em;color:var(--ink-2)}
+.gsx-i mark{background:none;color:var(--accent);font-weight:600}
+.gsx-src{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.1em;color:var(--accent)}
+.gsx-tag{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.14em;padding:3px 7px;border-radius:5px;box-shadow:inset 0 0 0 1px var(--ink-3);color:var(--ink-2)}
+.gsx-sk{cursor:default;animation:none}
+.gsx-sk .gsx-c,.gsx-sk i{background:linear-gradient(90deg,var(--sheet-side) 25%,var(--sheet) 50%,var(--sheet-side) 75%);background-size:300% 100%;animation:shimmer 1.3s ease-in-out infinite}
+.gsx-sk i{display:block;height:11px;width:55%;border-radius:3px}
+.gsx-sk i + i{width:35%;height:9px}
+.gsx-fail{margin:0;font-size:12px;letter-spacing:.06em;color:var(--ink-2);line-height:1.7}
+@media (min-width:600px){ .gsx-sec{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:40px} .gsx-st{grid-column:1/-1} }
 </style>
 
 <main class="app">
@@ -845,7 +871,7 @@ h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
       <label class="search" for="libSearch">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
         <span class="sr">搜索书库</span>
-        <input id="libSearch" type="search" placeholder="书名、作者" autocomplete="off">
+        <input id="libSearch" type="search" placeholder="搜索全部书源：书名、作者" autocomplete="off" enterkeyhint="search">
       </label>
       <label class="imp-btn" for="importFile" title="导入本地书籍（TXT · EPUB）">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>导入</span>
@@ -866,6 +892,7 @@ h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
       <section class="dsec" id="secPub" aria-label="出版精品"></section>
       <section class="dsec" id="secGuess" aria-label="猜你喜欢"></section>
     </div>
+    <div class="lib-body gsx" id="searchPane" hidden aria-live="polite"></div>
     <div class="lib-body" id="minePane" hidden>
       <section class="mine" aria-label="我的书">
         <div class="sec-h"><span class="recs-t"><b>我的书</b><small id="mineSub"></small></span></div>
@@ -1617,7 +1644,12 @@ document.getElementById("libGroups").addEventListener("click", e => {
   if (b.hasAttribute("data-new")) { toast("新建分组：下一步设计"); return; }
   libGroup = libGroup === b.dataset.g ? "" : b.dataset.g; renderLibrary(true);
 });
-document.getElementById("libSearch").addEventListener("input", e => { libQ = e.target.value; if (libQ.trim()) setSeg("mine", true); renderLibrary(); });
+document.getElementById("libSearch").addEventListener("input", e => {
+  libQ = e.target.value; const q = libQ.trim();
+  clearTimeout(gsTimer);
+  if (!q) { gsShow(false); renderLibrary(); return; }
+  gsShow(true); gsTimer = setTimeout(() => runSearch(q), 320);
+});
 document.getElementById("libGrid").addEventListener("click", e => { const c = e.target.closest("[data-open]"); if (c) openFrom(+c.dataset.open); });
 document.getElementById("importFile").addEventListener("change", e => {
   const fs = [...e.target.files]; if (!fs.length) return;
@@ -1699,14 +1731,14 @@ const saveSources = () => { try { localStorage.setItem("shelf-sources", JSON.str
 const hostOf = u => { try { return new URL(u).host; } catch (_) { return u; } };
 const esc = t => String(t).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const SORTS = { az: "名称", recent: "最近添加", ok: "响应速度" };
-const statusTxt = s => s.st === "wait" ? "测试中" : s.st === "bad" ? "无法连接" : s.ms >= 1000 ? (s.ms / 1000).toFixed(1) + " s" : s.ms + " ms";
+const statusTxt = s => s.st === "wait" ? "测试中" : s.st === "idle" ? "未测试" : s.st === "bad" ? "无法连接" : s.ms >= 1000 ? (s.ms / 1000).toFixed(1) + " s" : s.ms + " ms";
 
 function visibleSources(){
   const q = srcQ.trim().toLowerCase();
   let list = sources.filter(s =>
     (srcFilter === "all" || (srcFilter === "on" ? s.on : srcFilter === "off" ? !s.on : s.type === srcFilter)) &&
     (!q || s.name.toLowerCase().includes(q) || s.url.toLowerCase().includes(q)));
-  const rank = s => s.st === "bad" ? 1e9 : s.ms;
+  const rank = s => s.st === "bad" ? 1e9 : s.st === "idle" ? 1e8 : s.ms;
   list.sort(srcSort === "az" ? (a, b) => a.name.localeCompare(b.name, "zh") : srcSort === "recent" ? (a, b) => b.added - a.added : (a, b) => rank(a) - rank(b));
   return list.sort((a, b) => (b.pin ? 1 : 0) - (a.pin ? 1 : 0));
 }
@@ -1886,7 +1918,7 @@ function sheetLink(){
     if (!lines.length) { err.textContent = "先粘贴一个链接"; return; }
     if (bad.length) { err.textContent = `这不是有效的链接：${bad[0].slice(0, 40)}`; return; }
     const btn = addSheet.querySelector("[type=submit]"); btn.disabled = true; btn.textContent = "导入中…";
-    setTimeout(() => { addSources(lines.map(u => ({ name: hostOf(u).replace(/^www\./, ""), url: u }))); closeSheet(); }, 700);
+    importLinks(lines, btn, err);
   });
 }
 function openSheet(){
@@ -1912,26 +1944,79 @@ addSheet.addEventListener("click", e => {
   if (k === "help") toast("书源帮助：下一步设计");
 });
 function guessType(u){ return /opds|\.atom|feed/i.test(u) ? "OPDS" : /dav/i.test(u) ? "WebDAV" : "网页"; }
-function addSources(list){
+const LEGADO_TYPE = { 0: "小说", 1: "音频", 2: "漫画", 3: "文件" };
+/* a Legado-style source file: an array (or one object) of { bookSourceName, bookSourceUrl, bookSourceType, … } */
+function parseSourceFile(text){
+  let data; try { data = JSON.parse(text.replace(/^﻿/, "")); } catch (_) { return null; }
+  if (data && !Array.isArray(data) && Array.isArray(data.sources)) data = data.sources;
+  return (Array.isArray(data) ? data : [data]).filter(o => o && typeof o === "object").map(o => ({
+    name: o.bookSourceName || o.sourceName || o.name || o.title,
+    url: o.bookSourceUrl || o.sourceUrl || o.url,
+    type: o.bookSourceType in LEGADO_TYPE ? LEGADO_TYPE[o.bookSourceType] : (o.ruleSearch || o.searchUrl ? "小说" : undefined),
+    group: String(o.bookSourceGroup || o.group || "").replace(/[,，]+$/, ""),
+    on: o.enabled !== false,
+    note: o.bookSourceComment || ""
+  })).filter(o => o.url);
+}
+/* GitHub page links point at an HTML page; the file itself lives on raw.githubusercontent.com */
+function rawUrl(u){
+  const m = u.match(/^https?:\/\/github\.com\/([^/]+)\/([^/]+)\/(?:blob|raw)\/(.+)$/i);
+  if (m) return `https://raw.githubusercontent.com/${m[1]}/${m[2]}/${m[3]}`;
+  const g = u.match(/^https?:\/\/gist\.github\.com\/([^/]+)\/([0-9a-f]+)\/?$/i);
+  if (g) return `https://gist.githubusercontent.com/${g[1]}/${g[2]}/raw`;
+  return u;
+}
+async function importLinks(lines, btn, err){
+  const all = []; let failed = [];
+  for (const [k, u] of lines.entries()) {
+    btn.textContent = lines.length > 1 ? `下载中 ${k + 1}/${lines.length}…` : "下载中…";
+    const looksLikeFile = /\.(json|txt)(\?|#|$)/i.test(u) || /github(usercontent)?\.com|gist\./i.test(u);
+    try {
+      const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 12000);
+      const res = await fetch(rawUrl(u), { signal: ctl.signal }); clearTimeout(t);
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      btn.textContent = "解析中…";
+      const list = parseSourceFile(await res.text());
+      if (list && list.length) { all.push(...list); continue; }
+      if (looksLikeFile) { failed.push([u, "文件里没有找到书源"]); continue; }
+      all.push({ name: hostOf(u).replace(/^www\./, ""), url: u });        // a plain site or catalogue address
+    } catch (e) {
+      if (!looksLikeFile) { all.push({ name: hostOf(u).replace(/^www\./, ""), url: u }); continue; }
+      failed.push([u, e.name === "AbortError" ? "下载超时" : "下载失败"]);
+    }
+  }
+  if (failed.length && !all.length) {
+    btn.disabled = false; btn.textContent = "重试";
+    err.innerHTML = `${failed[0][1]}：没能下载这个书源文件。<br>网页预览里不能联网，安装版可以直接导入；也可以先把文件存到手机，再用「本地导入」。`;
+    return;
+  }
+  closeSheet(); addSources(all, failed.length);
+}
+function addSources(list, failedFiles = 0){
   const t = Date.now(), fresh = [];
   list.forEach((x, i) => {
-    if (!x.url || sources.some(s => s.url === x.url)) return;
-    fresh.push({ id: "n" + t + i, name: x.name || hostOf(x.url), url: x.url, type: x.type || guessType(x.url), group: x.group || "", on: true, st: "ok", ms: 120 + Math.round(Math.random() * 400), added: t + i });
+    if (!x.url || sources.some(s => s.url === x.url) || fresh.some(f => f.url === x.url)) return;
+    fresh.push({ id: "n" + t + i, name: x.name || hostOf(x.url), url: x.url, type: x.type || guessType(x.url), group: x.group || "",
+      on: x.on !== false, st: x.type ? "idle" : "ok", ms: x.type ? 0 : 120 + Math.round(Math.random() * 400), added: t + i, note: x.note || "" });
   });
   sources = sources.concat(fresh); saveSources();
-  srcFilter = "all"; srcSort = "recent"; renderSources();
+  srcFilter = "all"; srcSort = "recent"; srcQ = ""; const si = document.getElementById("srcSearch"); if (si) si.value = "";
+  renderSources();
+  srcList.scrollTop = 0;
   srcList.querySelectorAll(".src").forEach(r => { if (fresh.some(f => f.id === r.dataset.id))
     r.animate([{ backgroundColor: "color-mix(in oklab, var(--accent) 18%, transparent)" }, { backgroundColor: "transparent" }], { duration: 1600, easing: "ease-out" }); });
-  toast(fresh.length ? `已添加 ${fresh.length} 个书源${list.length > fresh.length ? `，跳过 ${list.length - fresh.length} 个重复` : ""}` : "这些书源已经在列表里了");
+  const byType = {}; fresh.forEach(f => byType[f.type] = (byType[f.type] || 0) + 1);
+  const kinds = Object.entries(byType).map(([k, n]) => `${k} ${n}`).join(" · ");
+  const skipped = list.length - fresh.length;
+  toast(fresh.length ? `已导入 ${fresh.length} 个书源${kinds ? "（" + kinds + "）" : ""}${skipped ? `，跳过 ${skipped} 个重复` : ""}${failedFiles ? `，${failedFiles} 个链接下载失败` : ""}`
+    : "这些书源已经在列表里了");
 }
 document.getElementById("srcFile").addEventListener("change", e => {
   const f = e.target.files[0]; e.target.value = ""; if (!f) return;
   const rd = new FileReader();
   rd.onload = () => {
-    let data; try { data = JSON.parse(rd.result); } catch (_) { toast("文件不是有效的书源 JSON"); return; }
-    const arr = (Array.isArray(data) ? data : [data]).map(o => ({
-      name: o.bookSourceName || o.sourceName || o.name || o.title, url: o.bookSourceUrl || o.sourceUrl || o.url,
-      group: o.bookSourceGroup || o.group || "" })).filter(o => o.url);
+    const arr = parseSourceFile(String(rd.result));
+    if (!arr) { toast("文件不是有效的书源 JSON"); return; }
     if (!arr.length) { toast("文件里没有找到书源"); return; }
     closeSheet(); addSources(arr);
   };
@@ -2524,6 +2609,69 @@ app.addEventListener("click", e => {
   const w = e.target.closest("[data-want]"); if (!w) return;
   e.stopPropagation(); toggleWant(w.dataset.want, w);
 }, true);
+
+/* ================= 书库 · 全局搜索 (every enabled source, results stream in) ================= */
+const gsPane = document.getElementById("searchPane");
+let gsRun = 0, gsTimer = 0, gsPrevSeg = "disc";
+const GS_POOL = (() => {                       // everything the prototype "knows": 发现 books + source recommendations
+  const m = new Map();
+  [...DISC, ...REC_POOL].forEach(d => { if (!m.has(d.t)) m.set(d.t, { t: d.t, a: d.a, cat: d.cat || "公版" }); });
+  return [...m.values()];
+})();
+const hashStr = t => { let h = 0; for (const c of t) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; };
+const mark = (txt, q) => { const i = txt.toLowerCase().indexOf(q.toLowerCase()); return i < 0 ? esc(txt) : esc(txt.slice(0, i)) + "<mark>" + esc(txt.slice(i, i + q.length)) + "</mark>" + esc(txt.slice(i + q.length)); };
+function gsShow(on){
+  const segEl = document.getElementById("libSeg");
+  if (on && gsPane.hidden) { gsPrevSeg = libSeg; document.getElementById("discPane").hidden = true; document.getElementById("minePane").hidden = true; segEl.hidden = true; gsPane.hidden = false; }
+  if (!on && !gsPane.hidden) { gsPane.hidden = true; segEl.hidden = false; libSeg = ""; setSeg(gsPrevSeg); gsRun++; }
+}
+function runSearch(q){
+  const run = ++gsRun, ql = q.toLowerCase(), on = sources.filter(s => s.on);
+  const local = OWN.filter(b => b.title.toLowerCase().includes(ql) || b.author.toLowerCase().includes(ql));
+  const hits = new Map(); let done = 0, failed = [];
+  const draw = () => {
+    if (run !== gsRun) return;
+    const res = [...hits.values()].sort((a, b) => b.srcs.length - a.srcs.length || a.d.t.localeCompare(b.d.t, "zh"));
+    const pct = on.length ? done / on.length : 1;
+    gsPane.innerHTML = `
+      <div class="gsx-head"><span class="recs-t"><b>搜索「${esc(q)}」</b><small>${done < on.length ? `正在搜索 ${on.length} 个书源 · 已返回 ${done}` : `${on.length} 个书源已全部返回`}</small></span>
+        <button class="txt-btn" type="button" id="gsClear">取消</button></div>
+      <div class="gsx-prog" aria-hidden="true"><i style="transform:scaleX(${pct})"></i></div>
+      ${local.length ? `<section class="gsx-sec"><div class="gsx-st">我的书 · ${local.length}</div>${local.slice(0, 6).map(b => `
+        <button class="gsx-r" type="button" data-own="${b.no - 1}"><span class="gsx-c"><img alt="" src="${coverOf(b.no - 1).slice(5, -2)}"></span>
+        <span class="gsx-i"><b>${mark(b.title, q)}</b><small>${mark(b.author, q)} · ${STATE_TXT[b.state]}</small></span><span class="gsx-tag">书架</span></button>`).join("")}</section>` : ""}
+      <section class="gsx-sec"><div class="gsx-st">书源结果 · ${res.length}</div>
+        ${res.map(r => `<button class="gsx-r" type="button" data-gt="${esc(r.d.t)}"><span class="gsx-c"><img alt="" src="${recCover(r.d)}"></span>
+          <span class="gsx-i"><b>${mark(r.d.t, q)}</b><small>${mark(r.d.a, q)} · ${esc(r.d.cat)}</small>
+          <span class="gsx-src">${esc(r.srcs[0])}${r.srcs.length > 1 ? ` 等 ${r.srcs.length} 个书源` : ""}</span></span></button>`).join("")}
+        ${done < on.length ? `<div class="gsx-r gsx-sk"><span class="gsx-c"></span><span class="gsx-i"><i></i><i></i></span></div>`.repeat(res.length ? 1 : 3) : ""}
+        ${done >= on.length && !res.length && !local.length ? `<p class="src-empty">没有找到「${esc(q)}」<br>换个关键词，或去书源页启用更多书源</p>` : ""}
+        ${!on.length ? `<p class="src-empty">还没有启用的书源<br><button class="txt-btn" type="button" id="gsGo" style="color:var(--accent)">去添加书源</button></p>` : ""}
+      </section>
+      ${failed.length && done >= on.length ? `<p class="gsx-fail">${failed.length} 个书源没有响应：${failed.slice(0, 3).map(esc).join("、")}${failed.length > 3 ? " 等" : ""}</p>` : ""}`;
+  };
+  draw();
+  on.forEach(s => {
+    const lat = s.st === "bad" ? 2600 : Math.min(3200, (s.ms || 700) + Math.random() * 700);
+    setTimeout(() => {
+      if (run !== gsRun) return;
+      done++;
+      if (s.st === "bad") { failed.push(s.name); draw(); return; }
+      const h = hashStr(s.id || s.name);
+      GS_POOL.filter(d => (d.t.toLowerCase().includes(ql) || d.a.toLowerCase().includes(ql)) && (hashStr(d.t) + h) % 3 !== 0)
+        .forEach(d => { const e = hits.get(d.t) || { d, srcs: [] }; e.srcs.push(s.name); hits.set(d.t, e); });
+      draw();
+    }, reduce ? 0 : lat);
+  });
+}
+gsPane.addEventListener("click", e => {
+  if (e.target.closest("#gsClear")) { const i = document.getElementById("libSearch"); i.value = ""; libQ = ""; gsShow(false); renderLibrary(); return; }
+  if (e.target.closest("#gsGo")) { switchTo("me"); setTimeout(openSources, ms(500)); return; }
+  const own = e.target.closest("[data-own]"); if (own) { openFrom(+own.dataset.own); return; }
+  const r = e.target.closest("[data-gt]"); if (!r) return;
+  const d = GS_POOL.find(x => x.t === r.dataset.gt), src = (r.querySelector(".gsx-src")?.textContent || "").replace(/ 等.*$/, "");
+  openDetail({ ...d, src }, r.querySelector("img"));
+});
 
 /* system back (Android app shell calls this): close the open book, else return to the shelf */
 window.__back = () => {
