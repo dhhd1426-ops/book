@@ -30,7 +30,14 @@ const say = (...a) => { const t = a.join(" "); console.log(t); summary.push(t); 
   } else text = fs.readFileSync(SRC, "utf8");
   const file = path.join(OUT, "source.json");
   fs.writeFileSync(file, text);
-  console.log("\n----- 书源原文（前 6000 字）-----\n" + text.slice(0, 6000) + "\n-----\n");
+  try {   // the parts that build requests, in full (comments can be long)
+    const arr = [].concat(JSON.parse(text));
+    for (const o of arr.slice(0, MAX)) {
+      console.log(`\n----- ${o.bookSourceName} -----`);
+      for (const k of ["bookSourceUrl", "header", "searchUrl", "jsLib", "loginUrl", "ruleSearch", "ruleBookInfo", "ruleToc", "ruleContent"])
+        if (o[k]) console.log(`${k}: ${typeof o[k] === "string" ? o[k] : JSON.stringify(o[k])}`.slice(0, 4000));
+    }
+  } catch (_) { console.log("\n----- 书源原文（前 6000 字）-----\n" + text.slice(0, 6000)); }
 
   const browser = await chromium.launch({ args: ["--allow-file-access-from-files", "--disable-web-security"] });
   const page = await browser.newPage({ viewport: { width: 400, height: 860 } });
