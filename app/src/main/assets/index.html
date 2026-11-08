@@ -414,6 +414,11 @@ h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
 .src .stt.slow{--dot:#c08a2e}
 .src .stt.bad{--dot:#b5452f}
 .src .stt.miss{--dot:#b5452f;color:#b5452f;letter-spacing:.04em}
+/* ---------- 搜索页 · 书源诊断 ---------- */
+.sx-diag{margin:4px auto 12px;max-width:560px;font-size:12px;color:var(--ink-2)}
+.sx-diag summary{cursor:pointer;padding:6px 0;text-align:center;list-style:none}
+.sx-diag summary::-webkit-details-marker{display:none}
+.sx-diag code{display:block;margin-top:6px;padding:8px 10px;border-radius:8px;background:color-mix(in oklab,var(--ink) 6%,transparent);font:11px/1.5 var(--f-mono);word-break:break-all;white-space:pre-wrap}
 .src .stt.wait::before{animation:blink 1s infinite}
 @keyframes blink{50%{opacity:.2}}
 .src .tog{width:52px;height:44px;border:0;background:none;padding:0;cursor:pointer;display:grid;place-items:center;flex-shrink:0;transition:opacity .25s,width .35s}
@@ -1927,7 +1932,7 @@ async function testSource(s){
     try {
       const list = await (s.search ? legadoSearch : opdsSearch)(s, word, ctl.signal);
       s.ms = Math.round(performance.now() - t0); s.st = s.ms > 3000 ? "slow" : "ok";
-      msg = list.length ? `「${s.name}」可用：搜索「${word}」返回 ${list.length} 本，用时 ${statusTxt(s)}` : `「${s.name}」连上了，但搜索「${word}」没解析出书（网站可能改版了）`;
+      msg = list.length ? `「${s.name}」可用：搜索「${word}」返回 ${list.length} 本，用时 ${statusTxt(s)}` : `「${s.name}」连上了，但搜索「${word}」没解析出书${list.diag ? `。返回的${list.diag.kind}开头：${list.diag.head.slice(0, 80)}` : "（网站可能改版了）"}`;
     } catch (e) { s.st = "bad"; s.ms = 0; msg = `「${s.name}」搜索失败：${whyFail(e)}`; }
     clearTimeout(tm); saveSources(); renderSources(); toast(msg); return;
   }
@@ -2952,6 +2957,8 @@ function sxRender(){
         : "已启用的书库里都没有这本书。可能还在版权期内、没有开放，或者书名有别的写法。"}</span>
       ${st.tab === "all" && !st.total ? `<button class="btn primary" type="button" data-sx="srcs">去书源管理</button>`
         : st.tab === "all" ? `<button class="btn primary" type="button" data-ask="${esc(q)}">${sxAsk.includes(q) ? "已在求书清单" : "求书：有书库收录时提醒我"}</button>` : ""}</div>
+      ${st.tab === "all" ? Object.entries(st.empty || {}).map(([n, d]) => `<details class="sx-diag"><summary>「${esc(n)}」返回了${d.kind}，${d.err ? `但书单规则出错：${esc(d.err)}` : d.items ? `找到 ${d.items} 项，但没读出书名` : "但按书单规则没找到书"} · 查看返回内容</summary>
+        <code>${esc(d.url)}</code><code>${esc(d.head)}${d.head.length >= 240 ? "…" : ""}</code></details>`).join("") : ""}
       ${similar.length ? `<div class="sx-h"><b>相似的书</b></div><div class="sx-list">${similar.map(row).join("")}</div>` : ""}` : ""}
     ${!searching ? `<p class="gsx-note">${st.live ? `联网搜索了：${esc(st.live)}。` : ""}${st.fail.length ? `没搜成功：${st.fail.map(n => esc(n) + (st.why?.[n] ? `（${esc(st.why[n])}）` : "")).join("、")}。` : ""}书架和公版书目里的「演示数据」只用于预览。${st.skipped ? `另有 ${st.skipped} 个书源没有搜索规则，没有参与${st.stale?.length ? `（其中 ${st.stale.length} 个是旧版本导入的，当时没保存规则，在书源管理里重新导入一次即可）` : "（WebDAV、普通网址等）"}。` : ""}</p>` : ""}`;
 }
@@ -3030,9 +3037,13 @@ const lgJava = {
   ajax: () => { throw new Error("java.ajax"); }, connect: () => { throw new Error("java.connect"); }
 };
 const lgSource = s => ({ key: s.url, bookSourceUrl: s.url, bookSourceName: s.name, getKey: () => s.url, getVariable: () => "", get: k => lgVars.get(k) ?? "", put: (k, v) => lgJava.put(k, v) });
+const lgCache = { get: k => lgVars.get("cache:" + k) ?? null, put: (k, v) => lgVars.set("cache:" + k, v), getFromMemory: k => lgVars.get("cache:" + k) ?? null, putMemory: (k, v) => lgVars.set("cache:" + k, v) };
 function lgJs(code, env){
+  /* java.getString / getStringList read a rule against the item being parsed, as in Legado */
+  const java = { ...lgJava, getString: r => lgStr(env.item ?? env.result, String(r), env), getStringList: r => lgStr(env.item ?? env.result, String(r), env).split("\n").filter(Boolean),
+    getElement: r => lgList(env.item ?? env.result, String(r), env)[0], getElements: r => lgList(env.item ?? env.result, String(r), env) };
   return new Function("java", "result", "baseUrl", "key", "page", "source", "book", "cookie", "cache", "src",
-    "return eval(" + JSON.stringify(code) + ")")(lgJava, env.result, env.baseUrl || "", env.key ?? "", env.page ?? 1, env.source || {}, {}, {}, {}, env.result);
+    "return eval(" + JSON.stringify(code) + ")")(java, env.result, env.baseUrl || "", env.key ?? "", env.page ?? 1, env.source || {}, {}, {}, lgCache, env.src ?? env.result);
 }
 /* split on a separator that is not inside brackets, braces or quotes */
 function lgSplit(rule, sep){
@@ -3161,14 +3172,16 @@ function lgOne(cur, rule, asList){
   return asList ? els : lgAttr(els, attr);
 }
 function lgReplace(s, re, rep, once){
-  let rx; try { rx = new RegExp(re, once ? "" : "g"); } catch (_) { return s; }
+  let fl = once ? "" : "g";
+  re = re.replace(/^\(\?([imsu]+)\)/, (_, f) => { fl += f; return ""; });   // Java's inline (?m) → JS flags
+  let rx; try { rx = new RegExp(re, fl); } catch (_) { return s; }
   if (!once) return s.replace(rx, rep);
   const m = s.match(rx); return m ? m[0].replace(rx, rep) : "";
 }
 /* a rule read as text */
 function lgStrPart(cur, rule, env){
   rule = rule.replace(/@put:\{[^}]*\}/gi, "").trim();
-  const [main, re, rep = "", ...more] = rule.split("##");
+  const [main, re, rep = "", ...more] = lgSplit(rule, "##");   // ## inside {{ }} belongs to that template
   let out;
   if (/\{\{[\s\S]*?\}\}/.test(main)) {   // template: https://x.com/book/{{$.id}}/
     out = main.replace(/\{\{([\s\S]*?)\}\}/g, (_, e) => { e = e.trim();
@@ -3188,6 +3201,7 @@ function lgStrPart(cur, rule, env){
 function lgStr(ctx, rule, env){
   let cur = ctx;
   for (const p of lgParts(rule)) {
+    if (p.js != null && /^\s*##/.test(p.js)) { const [, re, rep = "", ...more] = p.js.trim().split("##"); cur = lgReplace(cur == null ? "" : String(cur), re, rep, more.length > 0); continue; }
     if (p.js != null) { try { cur = lgJs(p.js, { ...env, result: cur }); } catch (_) { return ""; } }
     else cur = lgStrPart(cur, p.rule, env);
   }
@@ -3272,20 +3286,27 @@ async function legadoSearch(src, q, signal){
   const s = src.search, req = lgRequest(src, q);
   const res = await lgFetch(req, signal);
   const env = { key: q, page: 1, baseUrl: res.url, source: lgSource(src) };
-  const items = lgList(lgCtx(res.text), s.rule.bookList, env);
+  const root = lgCtx(res.text);
+  let items = [], err = "";
+  try { items = lgList(root, s.rule.bookList, env); } catch (e) { err = whyFail(e); }
   const abs = v => { v = String(v || "").split(/,\s*\{/)[0].trim(); if (!v || /^(data:|javascript:)/i.test(v) && !/^data:image/i.test(v)) return null; try { return new URL(v, res.url).href; } catch (_) { return null; } };
   const one = v => String(v || "").replace(/\s+/g, " ").trim();
-  return items.slice(0, 30).map(it => {
-    const g = k => { if (!s.rule[k]) return ""; try { return lgStr(it, s.rule[k], env); } catch (_) { return ""; } };
-    return { t: one(g("name")), a: one(g("author")).replace(/^(作\s*者)\s*[:：]\s*/, ""), cat: one(g("kind").split(/[\n,，]/)[0]) || src.group || "小说",
+  const list = items.slice(0, 30).map(it => {
+    const e = { ...env, item: it };
+    const g = k => { if (!s.rule[k]) return ""; try { return lgStr(it, s.rule[k], e); } catch (_) { return ""; } };
+    return { t: one(g("name")), a: one(g("author")).replace(/^(作\s*者)\s*[:：]\s*/, ""), cat: one(g("kind").split(/[\n,，|]/)[0]) || (src.group || "").split(/\s/)[0] || "小说",
       syn: one(g("intro")).slice(0, 120), cover: abs(g("coverUrl")), url: abs(g("bookUrl")) || res.url, last: one(g("lastChapter")), remote: src.name };
   }).filter(b => b.t);
+  /* what came back, so an empty result can say why */
+  list.diag = { url: req.url, head: res.text.replace(/\s+/g, " ").trim().slice(0, 240), kind: root instanceof Node ? "网页" : root && typeof root === "object" ? "JSON" : "文本",
+    items: items.length, err };
+  return list;
 }
 function runSources(q){
   const st = sxState, run = st.run, on = sources.filter(s => s.on);
   const searchable = on.filter(s => s.type === "OPDS" || s.search);
   st.total = searchable.length; st.skipped = on.length - searchable.length; st.done = 0; st.fail = []; st.live = "";
-  st.stale = on.filter(noRule).map(s => s.name); st.why = {};
+  st.stale = on.filter(noRule).map(s => s.name); st.why = {}; st.empty = {};
   const ok = [];
   sxRender();
   let next = 0;
@@ -3294,7 +3315,7 @@ function runSources(q){
     const s = searchable[next++], ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 12000);
     (s.search ? legadoSearch : opdsSearch)(s, q, ctl.signal).then(list => {
       if (run !== sxState.run) return;
-      st.src.push(...list.slice(0, 20)); if (list.length) ok.push(s.name);
+      st.src.push(...list.slice(0, 20)); if (list.length) ok.push(s.name); else if (list.diag) st.empty[s.name] = list.diag;
     }).catch(e => { if (run === sxState.run) { st.fail.push(s.name); st.why[s.name] = whyFail(e); } })
       .finally(() => { clearTimeout(t); if (run !== sxState.run) return; st.done++; st.live = ok.join("、"); sxRender(); work(); });
   };
