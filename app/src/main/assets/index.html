@@ -814,6 +814,7 @@ h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
 .gsx-sk .gsx-c,.gsx-sk i{background:linear-gradient(90deg,var(--sheet-side) 25%,var(--sheet) 50%,var(--sheet-side) 75%);background-size:300% 100%;animation:shimmer 1.3s ease-in-out infinite}
 .gsx-sk i{display:block;height:11px;width:55%;border-radius:3px}
 .gsx-sk i + i{width:35%;height:9px}
+.gsx-note{margin:4px 0 0;padding:12px 14px;border-radius:12px;background:color-mix(in oklab,var(--ink) 5%,transparent);font-size:12px;line-height:1.75;letter-spacing:.04em;color:var(--ink-2)}
 .gsx-fail{margin:0;font-size:12px;letter-spacing:.06em;color:var(--ink-2);line-height:1.7}
 @media (min-width:600px){ .gsx-sec{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:40px} .gsx-st{grid-column:1/-1} }
 </style>
@@ -2675,7 +2676,7 @@ function runSearch(q){
     const res = [...hits.values()].sort((a, b) => b.srcs.length - a.srcs.length || a.d.t.localeCompare(b.d.t, "zh"));
     const pct = on.length ? done / on.length : 1;
     gsPane.innerHTML = `
-      <div class="gsx-head"><span class="recs-t"><b>搜索「${esc(q)}」</b><small>${done < on.length ? `正在搜索 ${on.length} 个书源 · 已返回 ${done}` : `${on.length} 个书源已全部返回`}</small></span>
+      <div class="gsx-head"><span class="recs-t"><b>搜索「${esc(q)}」</b><small>演示搜索 · ${done < on.length ? `模拟 ${on.length} 个书源 · 已返回 ${done}` : `模拟 ${on.length} 个书源已返回`}</small></span>
         <button class="txt-btn" type="button" id="gsClear">取消</button></div>
       <div class="gsx-prog" aria-hidden="true"><i style="transform:scaleX(${pct})"></i></div>
       ${local.length ? `<section class="gsx-sec"><div class="gsx-st">我的书 · ${local.length}</div>${local.slice(0, 6).map(b => `
@@ -2686,7 +2687,8 @@ function runSearch(q){
           <span class="gsx-i"><b>${mark(r.d.t, q)}</b><small>${mark(r.d.a, q)} · ${esc(r.d.cat)}</small>
           <span class="gsx-src">${esc(r.srcs[0])}${r.srcs.length > 1 ? ` 等 ${r.srcs.length} 个书源` : ""}</span></span></button>`).join("")}
         ${done < on.length ? `<div class="gsx-r gsx-sk"><span class="gsx-c"></span><span class="gsx-i"><i></i><i></i></span></div>`.repeat(res.length ? 1 : 3) : ""}
-        ${done >= on.length && !res.length && !local.length ? `<p class="src-empty">没有找到「${esc(q)}」<br>换个关键词，或去书源页启用更多书源</p>` : ""}
+        ${done >= on.length && !res.length && !local.length ? `<p class="src-empty">没有找到「${esc(q)}」</p>` : ""}
+        ${done >= on.length ? `<p class="gsx-note">这是演示搜索，不会联网请求书源：只在你书架的 ${OWN.length} 本和内置的 ${GS_POOL.length} 本公版书里按书名、作者查找。接入真实搜索后，这里会显示各书源实际返回的结果。</p>` : ""}
         ${!on.length ? `<p class="src-empty">还没有启用的书源<br><button class="txt-btn" type="button" id="gsGo" style="color:var(--accent)">去添加书源</button></p>` : ""}
       </section>
       ${failed.length && done >= on.length ? `<p class="gsx-fail">${failed.length} 个书源没有响应：${failed.slice(0, 3).map(esc).join("、")}${failed.length > 3 ? " 等" : ""}</p>` : ""}`;
