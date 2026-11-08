@@ -654,6 +654,113 @@ h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
   .mine-f .groups{flex:1;min-width:0;margin:0;padding:0 0 8px}
   .mine-f .groups > :first-child{margin-left:auto}
 }
+
+/* ---------- 书库 · 发现 ---------- */
+#discPane[hidden],#minePane[hidden]{display:none}
+.lib-seg{position:relative;display:inline-flex;align-self:flex-start;margin-top:18px;padding:4px;border-radius:999px;background:color-mix(in oklab,var(--ink) 6%,transparent)}
+.lib-seg button{position:relative;z-index:1;height:34px;padding:0 20px;border:0;border-radius:999px;background:none;font:inherit;font-size:14px;letter-spacing:.2em;color:var(--ink-2);cursor:pointer;transition:color .3s}
+.lib-seg button[aria-selected="true"]{color:var(--ink)}
+.lib-seg .thumb{position:absolute;top:4px;bottom:4px;left:4px;border-radius:999px;background:var(--sheet);box-shadow:0 1px 3px var(--shadow),0 0 0 .5px var(--edge);transition:transform .5s cubic-bezier(.2,.9,.2,1),width .5s cubic-bezier(.2,.9,.2,1)}
+.lib-seg button:focus-visible{outline:1.5px solid var(--accent);outline-offset:2px}
+.view[data-view="library"] .lib-body{margin-top:18px}
+.more{height:32px;border:0;background:none;padding:0 0 0 8px;font:inherit;font-size:12.5px;letter-spacing:.12em;color:var(--ink-2);display:flex;align-items:center;gap:4px;cursor:pointer;margin-left:auto}
+.more:hover{color:var(--ink)}
+.dsec{display:flex;flex-direction:column;gap:14px}
+.more:focus-visible,.qk:focus-visible,.rk:focus-visible,.tg:focus-visible,.pubc:focus-visible,.gs:focus-visible,.slide:focus-visible,.dots button:focus-visible{outline:1.5px solid var(--accent);outline-offset:3px}
+
+/* hero carousel */
+.hero{position:relative;height:184px;border-radius:18px;overflow:hidden;touch-action:pan-y;box-shadow:0 18px 36px -24px var(--shadow)}
+.slide{position:absolute;inset:0;display:flex;align-items:stretch;border:0;padding:0;margin:0;font:inherit;text-align:left;cursor:pointer;
+  background:radial-gradient(120% 140% at 85% 30%,color-mix(in oklab,var(--hb) 70%,#fff 12%),var(--hb));color:#f4ecdc;opacity:0;visibility:hidden;transition:opacity .6s,visibility .6s}
+.slide.on{opacity:1;visibility:visible}
+.slide::after{content:"";position:absolute;inset:0;opacity:.14;mix-blend-mode:overlay;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.hx{position:relative;z-index:1;flex:1;min-width:0;display:flex;flex-direction:column;gap:7px;padding:22px 0 22px 22px}
+.hx small{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.24em;opacity:.75}
+.hx b{font-size:22px;font-weight:600;letter-spacing:.12em;line-height:1.35;text-wrap:balance}
+.hx > span{font-size:12px;line-height:1.7;letter-spacing:.04em;opacity:.8;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.hx em{margin-top:auto;align-self:flex-start;font-style:normal;font-size:12px;letter-spacing:.18em;display:flex;align-items:center;gap:4px;padding:7px 12px 7px 14px;border-radius:999px;box-shadow:inset 0 0 0 1px rgba(244,236,220,.45)}
+.hc{position:relative;z-index:1;width:112px;flex-shrink:0;margin:22px 22px -18px 8px;transform:rotate(6deg);transform-origin:50% 100%}
+.hc img{width:100%;display:block;box-shadow:0 18px 30px -10px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.08)}
+.dots{position:absolute;z-index:2;left:22px;bottom:12px;display:flex;gap:4px}
+.dots button{width:18px;height:18px;border:0;padding:0;background:none;cursor:pointer;display:grid;place-items:center}
+.dots button::after{content:"";width:6px;height:6px;border-radius:3px;background:rgba(244,236,220,.4);transition:width .4s,background .4s}
+.dots button[aria-selected="true"]::after{width:16px;background:#f4ecdc}
+.hero .hx{padding-bottom:36px}
+
+/* quick entries */
+.quick{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.qk{display:flex;align-items:center;gap:10px;padding:12px;border:0;border-radius:14px;background:var(--sheet);box-shadow:0 0 0 1px var(--edge);font:inherit;color:var(--ink);text-align:left;cursor:pointer;min-width:0;transition:transform .3s cubic-bezier(.2,.9,.2,1.3)}
+.qk:active{transform:scale(.96)}
+@media (max-width:599px){
+  .qk{flex-direction:column;align-items:center;text-align:center;gap:8px;padding:14px 6px 12px}
+  .qk .ql{align-items:center}
+}
+.qk .qi{width:38px;height:38px;border-radius:11px;flex-shrink:0;display:grid;place-items:center;color:var(--accent);background:color-mix(in oklab,var(--accent) 12%,transparent)}
+.qk .ql{display:flex;flex-direction:column;gap:2px;min-width:0}
+.qk b{font-weight:500;font-size:14.5px;letter-spacing:.16em;white-space:nowrap}
+.qk small{font-family:var(--f-mono);font-size:9px;letter-spacing:.06em;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* 高分佳作 */
+.ranked{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:minmax(0,1fr);border-top:1px solid var(--ink-3)}
+.rk{width:100%;display:flex;align-items:center;gap:14px;min-height:76px;padding:8px 0;border:0;border-bottom:1px solid var(--ink-3);background:none;font:inherit;color:var(--ink);text-align:left;cursor:pointer}
+.rk .no{width:26px;flex-shrink:0;font-size:24px;font-style:italic;font-weight:600;color:var(--ink-3);text-align:center;font-variant-numeric:tabular-nums}
+.ranked li:nth-child(-n+3) .no{color:var(--accent)}
+.rk .tc{width:42px;flex-shrink:0;aspect-ratio:5/7;overflow:hidden;box-shadow:0 0 0 1px var(--edge),3px 5px 10px -6px var(--shadow)}
+.rk .tc img,.pubc .pc img,.gs .gc img{width:100%;height:100%;object-fit:cover;display:block;filter:var(--art)}
+.rk .ti{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.rk .ti b{font-weight:500;font-size:15px;letter-spacing:.1em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rk .ti small{font-size:11.5px;letter-spacing:.06em;color:var(--ink-2)}
+.rk .sc{width:52px;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+.rk .sc b{font-family:var(--f-mono);font-weight:500;font-size:16px;color:var(--ink)}
+.rk .sc i{width:44px;height:2px;background:var(--ink-3);position:relative;overflow:hidden}
+.rk .sc i::after{content:"";position:absolute;inset:0 auto 0 0;width:var(--w);background:var(--accent)}
+
+/* 热门标签 */
+.tags{display:flex;flex-wrap:wrap;gap:8px}
+.tg{display:flex;align-items:baseline;gap:4px;height:36px;padding:0 14px;border:0;border-radius:999px;background:var(--sheet);box-shadow:0 0 0 1px var(--edge);font:inherit;color:var(--ink);cursor:pointer;font-size:13px;letter-spacing:.12em;align-items:center}
+.tg span{color:var(--accent);font-family:var(--f-mono)}
+.tg small{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.04em;color:var(--ink-2);margin-left:2px}
+.tg.w3{font-size:15px;height:40px;padding:0 16px;background:var(--ink);color:var(--paper);box-shadow:none}
+.tg.w3 small{color:color-mix(in oklab,var(--paper) 65%,transparent)}
+.tg.w2{font-size:14px}
+
+/* 出版精品 */
+.pubrow{display:flex;gap:16px;overflow-x:auto;scrollbar-width:none;margin:0 calc(-1 * var(--gut));padding:4px var(--gut) 8px;scroll-padding-inline:var(--gut);scroll-snap-type:x proximity}
+.pubrow::-webkit-scrollbar{display:none}
+.pubc{flex:0 0 132px;display:flex;flex-direction:column;gap:5px;border:0;background:none;padding:0;font:inherit;color:var(--ink);text-align:left;cursor:pointer;scroll-snap-align:start}
+.pubc .pc{position:relative;aspect-ratio:5/7;overflow:visible;box-shadow:0 0 0 1px var(--edge),6px 12px 22px -12px var(--shadow)}
+.pubc .pc::before{content:"";position:absolute;left:4px;right:-5px;top:4px;bottom:-5px;z-index:-1;background:var(--sheet-side);box-shadow:0 0 0 1px var(--edge)}
+.pubc .ed{position:absolute;left:8px;top:8px;padding:3px 7px;border-radius:4px;background:rgba(0,0,0,.45);color:#f4ecdc;font-family:var(--f-mono);font-size:9px;letter-spacing:.14em;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.pubc b{margin-top:6px;font-weight:500;font-size:13.5px;letter-spacing:.08em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pubc small{font-size:11px;letter-spacing:.06em;color:var(--ink-2)}
+
+/* 猜你喜欢 */
+.guess{display:grid;grid-template-columns:minmax(0,1fr);gap:0;border-top:1px solid var(--ink-3)}
+.gs{display:flex;gap:14px;padding:14px 0;border:0;border-bottom:1px solid var(--ink-3);background:none;font:inherit;color:var(--ink);text-align:left;cursor:pointer}
+.gs .gc{width:64px;flex-shrink:0;aspect-ratio:5/7;overflow:hidden;box-shadow:0 0 0 1px var(--edge),4px 8px 14px -8px var(--shadow)}
+.gs .gi{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.gs .gi b{font-weight:500;font-size:15px;letter-spacing:.1em}
+.gs .gi small{font-size:11.5px;letter-spacing:.06em;color:var(--ink-2)}
+.gs .gi > span{font-size:12.5px;line-height:1.65;letter-spacing:.04em;color:var(--ink-2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.gs .gi em{margin-top:auto;font-style:normal;font-family:var(--f-mono);font-size:10px;letter-spacing:.12em;color:var(--accent)}
+
+@media (min-width:600px){
+  .hero{height:236px}
+  .hx{padding:32px 0 44px 36px;gap:9px}
+  .hx b{font-size:28px}
+  .hx > span{font-size:13.5px;max-width:420px}
+  .hc{width:142px;margin:30px 48px -20px 12px}
+  .dots{left:36px;bottom:18px}
+  .quick{gap:14px}
+  .qk{padding:16px;gap:14px}
+  .qk .qi{width:44px;height:44px}
+  .qk b{font-size:16px}
+  .qk small{font-size:10px}
+  .ranked{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:40px}
+  .pubc{flex-basis:150px}
+  .guess{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:40px}
+}
 </style>
 
 <main class="app">
@@ -720,8 +827,21 @@ h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
         <input id="importFile" type="file" accept=".txt,.epub,text/plain,application/epub+zip" multiple class="sr">
       </label>
     </header>
-    <div class="lib-body">
-      <section class="recs" id="recs" aria-label="书源推荐"></section>
+    <div class="lib-seg" id="libSeg" role="tablist" aria-label="书库视图">
+      <i class="thumb"></i>
+      <button type="button" role="tab" aria-selected="true" data-seg="disc">发现</button>
+      <button type="button" role="tab" aria-selected="false" data-seg="mine">我的书</button>
+    </div>
+    <div class="lib-body" id="discPane">
+      <div class="hero" id="hero" role="region" aria-label="专题推荐" aria-roledescription="carousel"></div>
+      <div class="quick" id="quick"></div>
+      <section class="recs" id="recs" aria-label="今日推荐"></section>
+      <section class="dsec" id="secTop" aria-label="高分佳作"></section>
+      <section class="dsec" id="secTags" aria-label="热门标签"></section>
+      <section class="dsec" id="secPub" aria-label="出版精品"></section>
+      <section class="dsec" id="secGuess" aria-label="猜你喜欢"></section>
+    </div>
+    <div class="lib-body" id="minePane" hidden>
       <section class="mine" aria-label="我的书">
         <div class="sec-h"><span class="recs-t"><b>我的书</b><small id="mineSub"></small></span></div>
         <div class="mine-f">
@@ -1458,7 +1578,8 @@ function renderLibrary(animate){
     <span class="pb"><i style="transform:scaleX(${b.progress / 100})"></i></span>
     <span class="st">${b.state === "reading" ? b.progress + "%" : STATE_TXT[b.state]}</span></button>`).join("");
   document.getElementById("libEmpty").hidden = list.length > 0;
-  renderRecs();
+  if (!discDone) renderDiscover();
+  renderRecs(); placeSeg();
   if (animate) stagger([...document.querySelectorAll("#libGrid [data-st]")].slice(0, 12), 0, 8);
 }
 document.getElementById("libTabs").addEventListener("click", e => { const b = e.target.closest("[data-k]"); if (!b) return; libState = b.dataset.k; renderLibrary(true); });
@@ -1467,7 +1588,7 @@ document.getElementById("libGroups").addEventListener("click", e => {
   if (b.hasAttribute("data-new")) { toast("新建分组：下一步设计"); return; }
   libGroup = libGroup === b.dataset.g ? "" : b.dataset.g; renderLibrary(true);
 });
-document.getElementById("libSearch").addEventListener("input", e => { libQ = e.target.value; renderLibrary(); });
+document.getElementById("libSearch").addEventListener("input", e => { libQ = e.target.value; if (libQ.trim()) setSeg("mine", true); renderLibrary(); });
 document.getElementById("libGrid").addEventListener("click", e => { const c = e.target.closest("[data-open]"); if (c) openFrom(+c.dataset.open); });
 document.getElementById("importFile").addEventListener("change", e => {
   const fs = [...e.target.files]; if (!fs.length) return;
@@ -1843,13 +1964,12 @@ function pickRecs(){
 }
 function recHead(n){
   const ago = Math.round((Date.now() - recAt) / 60000);
-  return `<div class="recs-h"><span class="recs-t"><b>书源推荐</b><small>${recLoading ? "正在从书源获取…" : `来自 ${n} 个书源 · ${ago < 1 ? "刚刚更新" : ago + " 分钟前"}`}</small></span>
+  return `<div class="recs-h"><span class="recs-t"><b>今日推荐</b><small>${recLoading ? "正在从书源获取…" : `来自 ${n} 个书源 · ${ago < 1 ? "刚刚更新" : ago + " 分钟前"}`}</small></span>
     <button class="txt-btn rf${recLoading ? " spin" : ""}" type="button" id="recRefresh" aria-label="刷新推荐"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v4.5h-4.5"/></svg>刷新</button></div>`;
 }
 function renderRecs(){
   const box = document.getElementById("recs");
   const on = sources.filter(s => s.on).length;
-  if (libState !== "all" || libQ.trim()) { box.hidden = true; return; }
   box.hidden = false;
   if (!on) { box.innerHTML = `<div class="recs-empty"><span>还没有启用的书源，书库只显示本地书。</span><button class="txt-btn" type="button" id="recGo">去添加书源</button></div>`; return; }
   if (recSig !== srcSig()) { refreshRecs(); return; }
@@ -2147,6 +2267,131 @@ tocList.addEventListener("click", e => {
 addEventListener("keydown", e => { if (e.key !== "Escape") return;
   if (tocPage.classList.contains("on")) { closeToc(); e.stopImmediatePropagation(); }
   else if (reader.classList.contains("on")) { closeReader(); e.stopImmediatePropagation(); } }, true);
+
+/* ================= 书库 · 发现 (hero, quick entries, sections) ================= */
+const DISC = [
+  { t: "红楼梦", a: "曹雪芹", cat: "古典", sc: 9.7, ed: "校注本", bl: "大观园里的一年四季，几百个人物，各有各的心事。" },
+  { t: "呐喊", a: "鲁迅", cat: "小说", sc: 9.5, ed: "初版重排", bl: "十四篇小说，从《狂人日记》到《社戏》。" },
+  { t: "傲慢与偏见", a: "简·奥斯汀", cat: "爱情", sc: 9.3, ed: "全译本", bl: "第一印象常常是错的，奥斯汀用一整本书来证明。" },
+  { t: "水浒传", a: "施耐庵", cat: "古典", sc: 9.2, ed: "插图本", bl: "一百零八人，一个接一个地走上梁山。" },
+  { t: "罪与罚", a: "陀思妥耶夫斯基", cat: "哲思", sc: 9.4, ed: "全译本", bl: "一个穷学生，一个念头，和此后漫长的煎熬。" },
+  { t: "双城记", a: "狄更斯", cat: "历史", sc: 9.1, ed: "插图本", bl: "那是最好的时代，也是最坏的时代。" },
+  { t: "呼兰河传", a: "萧红", cat: "散文", sc: 9.3, ed: "精装", bl: "一座北方小城，一个孩子眼里的后花园和祖父。" },
+  { t: "基督山伯爵", a: "大仲马", cat: "冒险", sc: 9.4, ed: "全译本", bl: "十四年冤狱之后，一场耐心到可怕的复仇。" },
+  { t: "福尔摩斯探案集", a: "柯南·道尔", cat: "推理", sc: 9.2, ed: "全集", bl: "贝克街 221B，观察胜于一切。" },
+  { t: "背影", a: "朱自清", cat: "散文", sc: 9.0, ed: "散文选", bl: "月台上父亲爬过去买橘子的背影。" },
+  { t: "老残游记", a: "刘鹗", cat: "古典", sc: 8.8, ed: "校注本", bl: "一个摇串铃的郎中，走遍晚清的山东。" },
+  { t: "呼啸山庄", a: "艾米莉·勃朗特", cat: "爱情", sc: 9.0, ed: "全译本", bl: "荒原上的风，和一段不肯放手的爱恨。" },
+  { t: "汤姆·索亚历险记", a: "马克·吐温", cat: "成长", sc: 8.9, ed: "插图本", bl: "刷墙、逃学、山洞寻宝，一个男孩的夏天。" },
+  { t: "茶馆", a: "老舍", cat: "戏剧", sc: 9.5, ed: "剧本", bl: "一间茶馆，三个时代，五十年的北京。" },
+  { t: "堂吉诃德", a: "塞万提斯", cat: "冒险", sc: 9.0, ed: "全译本", bl: "一位读骑士小说读疯了的绅士，骑着瘦马出了门。" },
+  { t: "沉沦", a: "郁达夫", cat: "小说", sc: 8.7, ed: "初版重排", bl: "异乡留学生的苦闷，写得赤裸又真诚。" }
+];
+const TAGS = [["古典", 12.4], ["推理", 8.1], ["成长", 6.7], ["治愈", 9.3], ["诗词", 5.2], ["散文", 7.8], ["历史", 6.1], ["爱情", 10.6], ["冒险", 4.9], ["童话", 3.8], ["哲思", 4.4], ["女性写作", 3.6], ["战争", 2.9], ["科幻", 3.1], ["戏剧", 2.2]];
+const HERO = [
+  { b: 0, k: "专题 · 古典", h: "一部书，读一整年", s: "从元宵灯谜到芦雪庵赏雪，跟着大观园过四季。" },
+  { b: 2, k: "专题 · 爱情", h: "第一印象未必可靠", s: "两百年前的一场误会，今天读来依然好笑。" },
+  { b: 1, k: "专题 · 现代文学", h: "铁屋子里的呐喊", s: "鲁迅第一部小说集，十四篇，一个周末读完。" }
+];
+const discCover = d => recCover({ t: d.t, a: d.a });
+let libSeg = "disc", discDone = false, heroI = 0, heroT = 0, guessSeed = 0;
+const moreBtn = (k, l = "查看更多") => `<button class="more" type="button" data-more="${k}">${l}<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="m4.5 3 3 3-3 3"/></svg></button>`;
+const secHead = (title, sub, more) => `<div class="sec-h"><span class="recs-t"><b>${title}</b><small>${sub}</small></span>${more || ""}</div>`;
+
+function renderDiscover(){
+  discDone = true;
+  /* hero carousel */
+  const hero = document.getElementById("hero");
+  hero.innerHTML = HERO.map((x, i) => { const d = DISC[x.b], [bg] = REC_COLORS[[...d.t].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 0) % REC_COLORS.length];
+    return `<button class="slide${i === heroI ? " on" : ""}" type="button" data-disc="${x.b}" style="--hb:${bg}" aria-label="${x.h}：${d.t}" ${i === heroI ? "" : 'tabindex="-1"'}>
+      <span class="hx"><small>${x.k}</small><b>${x.h}</b><span>${x.s}</span><em>去看看<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m4.5 3 3 3-3 3"/></svg></em></span>
+      <span class="hc"><img alt="" src="${discCover(d)}"></span></button>`; }).join("")
+    + `<div class="dots" role="tablist" aria-label="切换专题">${HERO.map((_, i) => `<button type="button" role="tab" aria-selected="${i === heroI}" aria-label="第 ${i + 1} 个专题" data-dot="${i}"></button>`).join("")}</div>`;
+  /* quick entries: 排行 / 必读榜 / 分类 */
+  const qi = {
+    rank: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 20V12M12 20V5M19 20v-5"/><path d="M3 20h18"/></svg>',
+    must: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M6.5 3.5h11v17l-5.5-4-5.5 4z"/><path d="m12 7.2.9 1.9 2 .3-1.5 1.4.4 2-1.8-1-1.8 1 .4-2-1.5-1.4 2-.3z"/></svg>',
+    cat: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><circle cx="16.75" cy="16.75" r="3.25"/></svg>'
+  };
+  document.getElementById("quick").innerHTML = [["rank", "排行", "本周 Top 50"], ["must", "必读榜", "100 部经典"], ["cat", "分类", `${TAGS.length} 个类目`]]
+    .map(([k, l, s]) => `<button class="qk" type="button" data-more="${k}"><span class="qi">${qi[k]}</span><span class="ql"><b>${l}</b><small>${s}</small></span></button>`).join("");
+  /* 高分佳作 */
+  const top = [...DISC].sort((a, b) => b.sc - a.sc).slice(0, 6);
+  document.getElementById("secTop").innerHTML = secHead("高分佳作", "读者评分 9 分以上 · 示例数据", moreBtn("top"))
+    + `<ol class="ranked">${top.map((d, i) => `<li><button class="rk" type="button" data-disc="${DISC.indexOf(d)}">
+      <span class="no">${i + 1}</span><span class="tc"><img alt="" src="${discCover(d)}"></span>
+      <span class="ti"><b>${d.t}</b><small>${d.a} · ${d.cat}</small></span>
+      <span class="sc"><b>${d.sc.toFixed(1)}</b><i style="--w:${(d.sc - 8) / 2 * 100}%"></i></span></button></li>`).join("")}</ol>`;
+  /* 热门标签 */
+  const max = Math.max(...TAGS.map(t => t[1]));
+  document.getElementById("secTags").innerHTML = secHead("热门标签", "按本周阅读人数", "")
+    + `<div class="tags">${TAGS.map(([t, n]) => `<button class="tg w${Math.ceil(n / max * 3)}" type="button" data-tag="${t}"><span>#</span>${t}<small>${n} 万</small></button>`).join("")}</div>`;
+  /* 出版精品 */
+  const pub = DISC.filter(d => /全译本|插图本|校注本|精装|全集/.test(d.ed)).slice(0, 8);
+  document.getElementById("secPub").innerHTML = secHead("出版精品", "全译本 · 校注本 · 插图本", moreBtn("pub"))
+    + `<div class="pubrow">${pub.map(d => `<button class="pubc" type="button" data-disc="${DISC.indexOf(d)}">
+      <span class="pc"><img alt="" src="${discCover(d)}"><span class="ed">${d.ed}</span></span><b>${d.t}</b><small>${d.a}</small></button>`).join("")}</div>`;
+  renderGuess(false);
+  startHero();
+}
+function renderGuess(animate){
+  const pool = [...DISC].sort((a, b) => ((DISC.indexOf(a) * 7 + guessSeed * 13) % 17) - ((DISC.indexOf(b) * 7 + guessSeed * 13) % 17)).slice(0, 6);
+  const el = document.getElementById("secGuess");
+  el.innerHTML = secHead("猜你喜欢", "根据你读过的《纸飞机寄往明天》《雨季来信》", moreBtn("guess", "换一换"))
+    + `<div class="guess">${pool.map(d => `<button class="gs" type="button" data-disc="${DISC.indexOf(d)}" data-st>
+      <span class="gc"><img alt="" src="${discCover(d)}"></span>
+      <span class="gi"><b>${d.t}</b><small>${d.a} · ${d.cat}</small><span>${d.bl}</span><em>${wanted.has(d.t) ? "✓ 已加入想读" : "＋ 想读"}</em></span></button>`).join("")}</div>`;
+  if (animate) stagger([...el.querySelectorAll(".gs")], 0, 10);
+}
+/* hero: autoplay, dots, swipe */
+function heroGo(i){
+  const sl = [...document.querySelectorAll("#hero .slide")]; if (!sl.length) return;
+  const prev = heroI; heroI = (i + sl.length) % sl.length; if (prev === heroI) return;
+  sl.forEach((s, k) => { s.classList.toggle("on", k === heroI); s.tabIndex = k === heroI ? 0 : -1; });
+  document.querySelectorAll("#hero .dots button").forEach((d, k) => d.setAttribute("aria-selected", k === heroI));
+  if (!reduce) {
+    const s = sl[heroI];
+    s.querySelector(".hx").animate([{ opacity: 0, transform: "translateY(10px)" }, { opacity: 1, transform: "none" }], { duration: ms(560) || 1, delay: ms(80), easing: EASE_OUT, fill: "backwards" });
+    s.querySelector(".hc").animate([{ opacity: 0, transform: "translateX(24px) rotate(10deg)" }, { opacity: 1, transform: "rotate(6deg)" }], { duration: ms(700) || 1, delay: ms(120), easing: EASE_OUT, fill: "backwards" });
+  }
+}
+function startHero(){ clearInterval(heroT); if (reduce) return; heroT = setInterval(() => { if (curView === "library" && libSeg === "disc" && sel < 0 && !document.hidden) heroGo(heroI + 1); }, 5200); }
+const heroEl = document.getElementById("hero");
+let hx0 = null;
+heroEl.addEventListener("pointerdown", e => { hx0 = e.clientX; });
+heroEl.addEventListener("pointerup", e => { if (hx0 === null) return; const dx = e.clientX - hx0; hx0 = null; if (Math.abs(dx) > 40) { heroEl.dataset.swiped = "1"; heroGo(heroI + (dx < 0 ? 1 : -1)); startHero(); } });
+/* everything clickable on 发现 */
+document.getElementById("discPane").addEventListener("click", e => {
+  if (heroEl.dataset.swiped) { heroEl.dataset.swiped = ""; if (e.target.closest("#hero")) return; }
+  const dot = e.target.closest("[data-dot]"); if (dot) { heroGo(+dot.dataset.dot); startHero(); return; }
+  const m = e.target.closest("[data-more]")?.dataset.more;
+  if (m === "guess") { guessSeed++; renderGuess(true); return; }
+  if (m) { toast({ rank: "排行榜", must: "必读榜", cat: "分类", top: "高分佳作", pub: "出版精品" }[m] + "：下一步设计"); return; }
+  const tg = e.target.closest("[data-tag]"); if (tg) { toast(`#${tg.dataset.tag}：标签书单下一步设计`); return; }
+  const c = e.target.closest("[data-disc]"); if (!c || e.target.closest("#recs")) return;
+  const d = DISC[+c.dataset.disc];
+  if (c.classList.contains("gs")) {
+    if (wanted.has(d.t)) { toast(`《${d.t}》已在想读里`); return; }
+    wanted.add(d.t); c.querySelector("em").textContent = "✓ 已加入想读";
+    c.querySelector(".gc").animate([{ transform: "none" }, { transform: "translateY(-5px) rotate(-2deg)" }, { transform: "none" }], { duration: ms(480) || 1, easing: "cubic-bezier(.3,1.5,.5,1)" });
+    toast(`《${d.t}》已加入想读`); return;
+  }
+  toast(`《${d.t}》· ${d.a}：书籍详情下一步设计`);
+});
+/* 发现 / 我的书 */
+function setSeg(v, animate){
+  if (v === libSeg) return; libSeg = v;
+  document.querySelectorAll("#libSeg [data-seg]").forEach(b => b.setAttribute("aria-selected", b.dataset.seg === v));
+  const show = document.getElementById(v === "disc" ? "discPane" : "minePane"), hide = document.getElementById(v === "disc" ? "minePane" : "discPane");
+  hide.hidden = true; show.hidden = false;
+  if (animate && !reduce) show.animate([{ opacity: 0, transform: `translateX(${v === "disc" ? -16 : 16}px)` }, { opacity: 1, transform: "none" }], { duration: ms(420) || 1, easing: EASE_OUT });
+  placeSeg();
+}
+function placeSeg(){
+  const segEl = document.getElementById("libSeg"), on = segEl.querySelector('[aria-selected="true"]'), th = segEl.querySelector(".thumb");
+  if (on && on.offsetWidth) { th.style.width = on.offsetWidth + "px"; th.style.transform = `translateX(${on.offsetLeft - 4}px)`; }
+}
+document.getElementById("libSeg").addEventListener("click", e => { const b = e.target.closest("[data-seg]"); if (b) setSeg(b.dataset.seg, true); });
 
 /* system back (Android app shell calls this): close the open book, else return to the shelf */
 window.__back = () => {
