@@ -52,6 +52,8 @@ public class MainActivity extends Activity {
         s.setMediaPlaybackRequiresUserGesture(true);
 
         web.setWebViewClient(new WebViewClient());
+        // java.ajax, AES / MD5 and hidden-WebView pages for book-source rules (see ShelfNative)
+        web.addJavascriptInterface(new ShelfNative(this, web), "ShelfNative");
         web.setWebChromeClient(new WebChromeClient() {
             @Override
             public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
