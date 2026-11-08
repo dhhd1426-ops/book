@@ -12,6 +12,8 @@ import android.view.View;
 import android.view.Window;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -22,6 +24,7 @@ public class MainActivity extends Activity {
     private static final int PICK_FILE = 42;
     private WebView web;
     private ValueCallback<Uri[]> pending;
+    private Parsers parsers;
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -51,7 +54,16 @@ public class MainActivity extends Activity {
         s.setTextZoom(100);                    // keep the designed type scale
         s.setMediaPlaybackRequiresUserGesture(true);
 
-        web.setWebViewClient(new WebViewClient());
+        // Futon's manga sources (see Parsers.kt); their page images are served through shouldInterceptRequest
+        parsers = new Parsers(this, web);
+        web.setWebViewClient(new WebViewClient() {
+            @Override
+            public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                WebResourceResponse r = parsers.intercept(request);
+                return r != null ? r : super.shouldInterceptRequest(view, request);
+            }
+        });
+        web.addJavascriptInterface(parsers, "ShelfParsers");
         // java.ajax, AES / MD5 and hidden-WebView pages for book-source rules (see ShelfNative)
         web.addJavascriptInterface(new ShelfNative(this, web), "ShelfNative");
         web.setWebChromeClient(new WebChromeClient() {

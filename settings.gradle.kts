@@ -10,6 +10,8 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        // kotatsu-parsers (the manga sources Futon uses) is published from GitHub through JitPack
+        maven("https://jitpack.io")
     }
 }
 rootProject.name = "book"

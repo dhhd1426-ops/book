@@ -414,6 +414,9 @@ h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
 .src .stt.slow{--dot:#c08a2e}
 .src .stt.bad{--dot:#b5452f}
 .src .stt.miss{--dot:#b5452f;color:#b5452f;letter-spacing:.04em}
+/* ---------- 阅读 · 漫画（竖向滚动） ---------- */
+.rd-pg{display:block;width:100%;max-width:900px;height:auto;min-height:30vh;margin:0 auto;background:color-mix(in oklab,var(--rp-ink2) 8%,transparent)}
+.rd-pg[src]{min-height:0}
 /* ---------- 书源 · 自带书源包 ---------- */
 .src-pack{grid-column:1 / -1}
 /* ---------- 书源书 · 详情 / 正文状态 ---------- */
@@ -567,6 +570,10 @@ h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
 .rd-text .ch b{display:block;margin-top:14px;font-size:1.55em;font-weight:600;letter-spacing:.24em;line-height:1.5}
 .rd-text .ch i{display:block;width:28px;height:1px;margin:18px auto 0;background:var(--rp-ink2);opacity:.6}
 .rd-text .end{break-before:avoid;text-align:center;margin-top:2em;font-family:var(--f-mono);font-size:11px;letter-spacing:.3em;color:var(--rp-ink2);text-indent:0}
+/* picture chapters (漫画) scroll vertically instead of turning column pages */
+.reader.rd-comic .rd-frame{left:0;right:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.reader.rd-comic .rd-text{height:auto;width:auto!important;column-width:auto!important;columns:auto!important;transform:none!important;text-align:center}
+.reader.rd-comic .rd-text .ch{padding:6% 0 4%}
 .rd-foot{position:absolute;left:30px;right:30px;bottom:calc(16px + env(safe-area-inset-bottom,0px));display:flex;justify-content:space-between;
   font-family:var(--f-mono);font-size:10px;letter-spacing:.14em;color:var(--rp-ink2);pointer-events:none;font-variant-numeric:tabular-nums}
 .rd-turn{position:absolute;inset:0;pointer-events:none;opacity:0;background:linear-gradient(90deg,transparent 40%,rgba(0,0,0,.08) 50%,transparent 60%);background-size:300% 100%}
@@ -1930,18 +1937,19 @@ document.getElementById("selbar").addEventListener("click", e => {
 
 /* rows: toggle, check, menu */
 /* a book-source (小说 / 漫画 …) imported by an older version, which did not keep its search rule */
-const noRule = s => !s.search && !["OPDS", "WebDAV", "网页"].includes(s.type);
+const noRule = s => !s.search && !s.kt && !["OPDS", "WebDAV", "网页"].includes(s.type);
 const whyFail = e => e?.name === "AbortError" ? "超时" : e?.net ? e.message : /^HTTP \d/.test(e?.message || "") ? e.message
   : /^java\./.test(e?.message || "") ? `规则用到了 ${e.message}，这里还不支持` : e instanceof TypeError && /fetch|network|load failed/i.test(e.message) ? "连不上（网络请求被拦下或服务器没响应）"
   : `规则出错：${String(e?.message || e).slice(0, 80)}`;
 async function testSource(s){
   if (noRule(s)) { toast(`「${s.name}」没有保存搜索规则：在右上角加号里重新导入这个书源文件`); return; }
-  if (s.search || s.type === "OPDS") {   // a real search with the source's own check word
+  if (s.kt && !KT()) { toast("漫画源要在安装版里测试"); return; }
+  if (s.search || s.type === "OPDS" || s.kt) {   // a real search with the source's own check word
     s.st = "wait"; renderSources();
-    const word = s.search?.rule.checkKeyWord || "我的", t0 = performance.now(), ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), window.ShelfNative?.request ? 45000 : 15000);
+    const word = s.kt ? (/中文/.test(s.group) ? "斗罗" : "one") : s.search?.rule.checkKeyWord || "我的", t0 = performance.now(), ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), window.ShelfNative?.request ? 45000 : 15000);
     let msg;
     try {
-      const list = await (s.search ? legadoSearch : opdsSearch)(s, word, ctl.signal);
+      const list = await (s.kt ? ktSearch : s.search ? legadoSearch : opdsSearch)(s, word, ctl.signal);
       s.ms = Math.round(performance.now() - t0); s.st = s.ms > 3000 ? "slow" : "ok";
       msg = list.length ? `「${s.name}」可用：搜索「${word}」返回 ${list.length} 本，用时 ${statusTxt(s)}` : `「${s.name}」连上了，但搜索「${word}」没解析出书${list.diag ? `。返回的${list.diag.kind}开头：${list.diag.head.slice(0, 80)}` : "（网站可能改版了）"}`;
     } catch (e) { s.st = "bad"; s.ms = 0; msg = `「${s.name}」搜索失败：${whyFail(e)}`; }
@@ -2016,7 +2024,8 @@ function sheetHome(){
       <button class="tile" type="button" data-add="file"><span class="ic">${ic.file}</span><b>本地导入</b><small>选择 .json 书源文件，可一次导入多个</small></button>
       <button class="tile" type="button" data-add="link"><span class="ic">${ic.link}</span><b>网络导入</b><small>粘贴书源或订阅地址</small></button>
       <button class="tile" type="button" data-add="qr"><span class="ic">${ic.qr}</span><b>扫码导入</b><small>扫描别人分享的书源二维码</small></button>
-      <button class="tile src-pack" type="button" data-add="futon"><span class="ic">${ic.file}</span><b>Futon 小说源</b><small>随 App 自带的 7 个英文轻小说源：Royal Road、FreeWebNovel、Scribble Hub 等</small></button>
+      <button class="tile src-pack" type="button" data-add="kotatsu"><span class="ic">${ic.file}</span><b>Futon 漫画源</b><small>App 内置 Futon 的漫画解析库：约 1400 个漫画、条漫源（含漫画柜、包子漫画等中文源，中文源默认开启）</small></button>
+      <button class="tile src-pack" type="button" data-add="futon"><span class="ic">${ic.file}</span><b>Futon 小说源</b><small>7 个英文轻小说源：Royal Road、FreeWebNovel、Scribble Hub 等</small></button>
     </div>
     <button class="help" type="button" data-add="help"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M9.8 9.5a2.3 2.3 0 1 1 3.2 2.1c-.7.3-1 .8-1 1.5v.4M12 16.5v.2"/></svg>书源是什么、怎么写</button>`;
 }
@@ -2059,6 +2068,7 @@ addSheet.addEventListener("click", e => {
   if (k === "new") { closeSheet(); toast("新建书源：规则编辑器下一步设计"); }
   if (k === "file") document.getElementById("srcFile").click();
   if (k === "futon") importBundled("sources/futon-novels.json");
+  if (k === "kotatsu") importKotatsu();
   if (k === "link") { sheetLink(); stagger([...addSheet.querySelectorAll(".urlform > *")], 0, 8); }
   if (k === "home") { sheetHome(); stagger([...addSheet.querySelectorAll(".tile")], 0, 10); }
   if (k === "qr") toast("扫码需要相机，安装版里接入");
@@ -2185,7 +2195,7 @@ function addSources(list, failedFiles = 0){
     }
     fresh.push({ id: "n" + t + i, name: x.name || hostOf(x.url), url: x.url, type: x.type || guessType(x.url), group: x.group || "",
       on: x.on !== false, st: x.type ? "idle" : "ok", ms: x.type ? 0 : 120 + Math.round(Math.random() * 400), added: t + i, note: x.note || "",
-      ...(x.search ? { search: x.search } : {}) });
+      ...(x.search ? { search: x.search } : {}), ...(x.kt ? { kt: x.kt } : {}) });
   });
   sources = sources.concat(fresh); saveSources();
   srcFilter = "all"; srcSort = "recent"; srcQ = ""; const si = document.getElementById("srcSearch"); if (si) si.value = "";
@@ -2398,6 +2408,7 @@ const marksOf = i => rdMarks[i] || (rdMarks[i] = []);
 const markAt = () => marksOf(rd.i).find(m => m.ch === rd.ch && m.page === rd.page);
 
 function chapterHTML(b, n){
+  reader.classList.toggle("rd-comic", !!b.lg?.comic);   // picture chapters scroll instead of turning pages
   if (b.lg?.toc) return lgChapterHTML(b, n);
   const start = (n * 5 + b.no) % PARAS.length, ps = [];
   for (let k = 0; k < 14; k++) ps.push(PARAS[(start + k) % PARAS.length]);
@@ -2407,13 +2418,15 @@ function chapterHTML(b, n){
 /* a chapter from a book source: shown when loaded, fetched on first view */
 function lgChapterHTML(b, n){
   const ch = b.lg.toc[n - 1] || {}, head = `<div class="ch"><small>${ch.vol ? esc(ch.vol) + " · " : ""}第 ${n} 章</small><b>${esc(ch.name || "")}</b><i></i></div>`;
+  if (ch.pages) return head + ch.pages.map((u, k) => `<img class="rd-pg" src="${esc(u)}" alt="第 ${k + 1} 页" loading="${k < 3 ? "eager" : "lazy"}" decoding="async" referrerpolicy="no-referrer">`).join("")
+    + `<p class="end">— 本话完 · 共 ${ch.pages.length} 页 —</p>`;
   if (ch.text != null) return head + (ch.text ? ch.text.split("\n").map(p => `<p>${esc(p)}</p>`).join("") : `<p class="rd-note">这一章没有正文。可能是付费章节，或者需要在书源网站登录。</p>`) + `<p class="end">— 本章完 —</p>`;
   if (ch.err) return head + `<p class="rd-note">没能加载这一章：${esc(ch.err)}</p><p class="rd-note"><button class="txt-btn" type="button" data-rd-retry="${n}">重试</button></p>`;
   if (!ch.busy) {
     const i = BOOKS.indexOf(b); ch.busy = true;
     lgChapter(b, n).catch(e => { ch.err = whyRead(e); }).finally(() => {
       ch.busy = false;
-      if (reader.classList.contains("on") && rd.i === i && rd.ch === n) { rdText.innerHTML = chapterHTML(b, n); rd.page = Math.min(rd.page, 0); rd.pages = 1; paginate(); }
+      if (reader.classList.contains("on") && rd.i === i && rd.ch === n) { rdText.innerHTML = chapterHTML(b, n); rd.page = Math.min(rd.page, 0); rd.pages = 1; paginate(); rdFrame.scrollTop = 0; }
     });
   }
   return head + `<p class="rd-note rd-wait">正在从「${esc(b.code)}」加载这一章…</p>`;
@@ -2430,6 +2443,7 @@ function rdLabels(){
   reader.classList.toggle("marked", !!markAt());
 }
 function paginate(keepRatio){
+  if (reader.classList.contains("rd-comic")) { rdText.style.transform = ""; rd.pages = 1; rd.page = 0; rdLabels(); return; }
   const ratio = rd.pages > 1 ? rd.page / (rd.pages - 1) : 0;
   rd.fw = rdFrame.clientWidth;
   rdText.style.fontSize = rdFs + "px";
@@ -2443,13 +2457,19 @@ const pageX = p => -(rd.fw + RD_GAP) * p;
 function placePage(){ rdText.style.transform = `translateX(${pageX(rd.page)}px)`; }
 function loadChapter(n, atEnd, dir){
   const b = BOOKS[rd.i]; n = clamp(n, 1, b.chapters);
-  const swap = () => { rd.ch = n; rdText.innerHTML = chapterHTML(b, n); rd.page = 0; rd.pages = 1; paginate(); if (atEnd) { rd.page = rd.pages - 1; placePage(); rdLabels(); } };
+  const swap = () => { rd.ch = n; rdText.innerHTML = chapterHTML(b, n); rd.page = 0; rd.pages = 1; paginate(); rdFrame.scrollTop = atEnd && reader.classList.contains("rd-comic") ? rdFrame.scrollHeight : 0;
+    if (atEnd) { rd.page = rd.pages - 1; placePage(); rdLabels(); } };
   b.reading = Math.max(1, n); if (b.state !== "done") { b.state = "reading"; b.progress = Math.round(n / b.chapters * 100); }
   if (!dir || reduce) { swap(); return; }
   rdText.animate([{ opacity: 1, transform: `translateX(${pageX(rd.page)}px)` }, { opacity: 0, transform: `translateX(${pageX(rd.page) - 30 * dir}px)` }], { duration: ms(200) || 1, easing: "ease-in" })
     .finished.then(() => { swap(); rdText.animate([{ opacity: 0, transform: `translateX(${pageX(rd.page) + 30 * dir}px)` }, { opacity: 1, transform: `translateX(${pageX(rd.page)}px)` }], { duration: ms(360) || 1, easing: EASE_OUT }); });
 }
 function turn(dir){
+  if (reader.classList.contains("rd-comic")) {   // scroll about a screen; past the ends, change chapter
+    const f = rdFrame, step = f.clientHeight * .85;
+    if (dir > 0 && f.scrollTop + f.clientHeight < f.scrollHeight - 4) { f.scrollBy({ top: step, behavior: reduce ? "auto" : "smooth" }); return; }
+    if (dir < 0 && f.scrollTop > 4) { f.scrollBy({ top: -step, behavior: reduce ? "auto" : "smooth" }); return; }
+  }
   if (rd.page + dir >= 0 && rd.page + dir < rd.pages) {
     const from = pageX(rd.page); rd.page += dir;
     rdText.animate([{ transform: `translateX(${from}px)` }, { transform: `translateX(${pageX(rd.page)}px)` }], { duration: ms(420) || 1, easing: "cubic-bezier(.3,.7,.2,1)" });
@@ -3483,6 +3503,52 @@ async function legadoSearch(src, q, signal){
     items: items.length, err };
   return list;
 }
+/* ---------- Futon 漫画源: kotatsu-parsers running in the Android shell (Parsers.kt) ---------- */
+const KT = () => window.ShelfParsers;
+let ktSeq = 0; const ktWait = new Map();
+window.__ktDone = (id, r) => { const f = ktWait.get(id); if (f) { ktWait.delete(id); f(r || { err: "没有响应" }); } };
+function ktCall(method, args, signal){
+  return new Promise((ok, fail) => {
+    if (!KT()) { fail(Object.assign(new Error("漫画源要在安装版里用"), { net: true })); return; }
+    const id = "k" + (++ktSeq);
+    ktWait.set(id, r => r.err ? fail(Object.assign(new Error(r.err), { net: true })) : ok(r.ok));
+    signal?.addEventListener("abort", () => { if (ktWait.delete(id)) fail(Object.assign(new Error("超时"), { name: "AbortError" })); });
+    KT().call(id, method, JSON.stringify(args));
+  });
+}
+/* pictures go through the shell, which adds the source's own headers (Referer, cookies, descrambling) */
+const ktImg = (src, u) => u ? "https://shelf-img.local/?s=" + encodeURIComponent(src) + "&u=" + encodeURIComponent(u) : null;
+async function ktSearch(s, q, signal){
+  const list = await ktCall("search", { source: s.kt, q }, signal);
+  return list.map(m => ({ t: m.title, a: m.author, cat: (m.tags || [])[0] || "漫画", syn: lgPlain(m.intro || "").slice(0, 120), cover: ktImg(s.kt, m.cover),
+    remote: s.name, sid: s.id, kt: m.key, burl: m.url }));
+}
+async function ktLoadBook(b){
+  const src = lgSrcOf(b); if (!src) throw new Error("书源已被删除");
+  const d = await ktCall("details", { key: b.lg.kt });
+  if (d.intro) b.syn = lgPlain(d.intro);
+  if (d.author) b.author = d.author;
+  if (d.cover) b.cover = ktImg(src.kt, d.cover);
+  if (d.tags?.length) { b.cat = d.tags[0]; b.kinds = d.tags.slice(0, 4); }
+  b.status = /FINISHED/.test(d.state) ? "已完结" : /ONGOING/.test(d.state) ? "连载" : b.status || "连载";
+  const list = (d.chapters || []).map(c => ({ name: c.name, kt: c.key, vol: c.volume > 0 ? `第 ${c.volume} 卷` : "" }));
+  if (!list.length) throw new Error("目录是空的：这个源没有给出章节");
+  b.lg.toc = list; b.lg.comic = true; b.chapters = list.length; b.reading = Math.min(b.reading || 1, list.length); b.words = "—";
+  return b;
+}
+/* the tile in 添加书源: every source of the library, Chinese ones switched on */
+const KT_LANG = { zh: "中文", en: "英文", ja: "日文", ko: "韩文", es: "西语", pt: "葡语", fr: "法语", de: "德语", it: "意语", ru: "俄语", id: "印尼语", vi: "越南语", th: "泰语", tr: "土耳其语", ar: "阿拉伯语", pl: "波兰语", uk: "乌克兰语" };
+function importKotatsu(){
+  if (!KT()) { toast("漫画源要在安装版里用：Futon 的漫画解析库打包在 App 里，网页预览里没有"); return; }
+  let all; try { all = JSON.parse(KT().sources()); } catch (_) { toast("读取漫画源失败"); return; }
+  const list = all.map(x => {
+    const adult = /HENTAI|DOUJINSHI/.test(x.type), lang = KT_LANG[x.locale] || (x.locale ? x.locale : "多语言");
+    return { name: x.title, url: "futon://" + x.id.toLowerCase(), type: "漫画", kt: x.id,
+      group: `漫画 · ${lang}${adult ? " · 18+" : ""}`, on: x.locale === "zh" && !x.broken && !adult,
+      note: x.broken ? "Futon 标记为已失效" : "" };
+  });
+  closeSheet(); addSources(list);
+}
 /* ---------- reading a book from a Legado source: 详情 → 目录 → 正文 ---------- */
 const lgSrcOf = b => sources.find(s => s.id === b.lg.sid);
 const lgOneLine = v => String(v || "").replace(/\s+/g, " ").trim();
@@ -3491,6 +3557,7 @@ function lgAbs(v, base){ v = lgFirst(v).split(/,\s*\{/)[0].trim(); if (!v) retur
 const lgNeed = (src, part) => { if (!src) throw new Error("书源已被删除"); if (!src.search?.[part]) throw new Error(`书源缺少${{ info: "详情", toc: "目录", content: "正文" }[part]}规则：在书源管理里重新导入一次`); };
 function lgLoadBook(b){
   if (b.lg.toc) return Promise.resolve(b);
+  if (b.lg.kt) return b.lg.loading || (b.lg.loading = ktLoadBook(b).finally(() => { b.lg.loading = null; }));
   return b.lg.loading || (b.lg.loading = (async () => {
     const src = lgSrcOf(b); lgNeed(src, "toc");
     const S = src.search, R = S.info || {}, T = S.toc, envB = { source: lgSource(src), book: lgBookVar(b) };
@@ -3545,6 +3612,13 @@ function lgPlain(html){
 async function lgChapter(b, n){
   const ch = b.lg.toc[n - 1];
   if (ch.text != null) return ch.text;
+  if (ch.kt) {   // a picture chapter: page addresses come from the shell
+    const src = lgSrcOf(b); if (!src) throw new Error("书源已被删除");
+    const urls = await ktCall("pages", { key: ch.kt });
+    if (!urls.length) throw new Error("这一话没有图片");
+    ch.pages = urls.map(u => /^data:image/i.test(u) ? u : ktImg(src.kt, u)); ch.text = "";
+    return "";
+  }
   const src = lgSrcOf(b); lgNeed(src, "content");
   const C = src.search.content, parts = [], seen = new Set();
   let url = ch.url, base = ch.base;
@@ -3566,7 +3640,7 @@ async function lgChapter(b, n){
 }
 function runSources(q){
   const st = sxState, run = st.run, on = sources.filter(s => s.on);
-  const searchable = on.filter(s => s.type === "OPDS" || s.search);
+  const searchable = on.filter(s => s.type === "OPDS" || s.search || (s.kt && KT()));
   st.total = searchable.length; st.skipped = on.length - searchable.length; st.done = 0; st.fail = []; st.live = "";
   st.stale = on.filter(noRule).map(s => s.name); st.why = {}; st.empty = {}; st.failUrl = {};
   const ok = [];
@@ -3575,7 +3649,7 @@ function runSources(q){
   const work = () => {   // a few at a time: an imported file can hold hundreds of sources
     if (run !== sxState.run || next >= searchable.length) return;
     const s = searchable[next++], ctl = new AbortController(), t = setTimeout(() => ctl.abort(), window.ShelfNative?.request ? 45000 : 15000);
-    (s.search ? legadoSearch : opdsSearch)(s, q, ctl.signal).then(list => {
+    (s.kt ? ktSearch : s.search ? legadoSearch : opdsSearch)(s, q, ctl.signal).then(list => {
       if (run !== sxState.run) return;
       st.src.push(...list.slice(0, 20)); if (list.length) ok.push(s.name); else if (list.diag) st.empty[s.name] = list.diag;
     }).catch(e => { if (run === sxState.run) { st.fail.push(s.name); st.why[s.name] = whyFail(e); if (e?.url) st.failUrl[s.name] = e.url; } })
@@ -3596,7 +3670,7 @@ sxBody.addEventListener("click", e => {
   const b = SX_BOOKS().find(x => x.t === op.dataset.open) || sxState.src.find(x => x.t === op.dataset.open && x.a === op.dataset.a);
   if (b && b.own != null) { closeSearch(); openFrom(b.own); return; }
   openDetail({ t: b.t, a: b.a || "佚名", cat: b.cat, bl: b.syn, sc: b.sc, cover: b.cover, src: b.remote || "公版书库", words: b.words,
-    lg: b.sid ? { sid: b.sid, bookUrl: b.burl, base: b.base } : null }, op.querySelector("img"));
+    lg: b.sid ? { sid: b.sid, bookUrl: b.burl, base: b.base, kt: b.kt } : null }, op.querySelector("img"));
 });
 addEventListener("keydown", e => { if (e.key === "Escape" && sxEl.classList.contains("on") && !det) { closeSearch(); e.stopImmediatePropagation(); } }, true);
 
