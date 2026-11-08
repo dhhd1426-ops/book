@@ -1,0 +1,1144 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}*{-webkit-tap-highlight-color:transparent}</style>
+</head>
+<body>
+<title>立体书架</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Noto+Serif+SC:wght@400;500;600&display=swap">
+<style>
+/* Layout: one phone-sized archive screen; a 3D shelf of paper books in oblique view, the focused book is pulled forward and turned to show its cover. */
+/* 浅色「宣纸」: cool rice paper, ink-black type, books lit from above.
+   深色「夜读」: blue-black study at night, graphite books, warm desk-lamp pool behind the focused book. */
+:root{
+  --paper:#f2f1ec;       /* page ground: rice paper, a hair cool */
+  --paper-deep:#e6e4dd;  /* desktop surround */
+  --sheet:#fcfbf8;       /* spine & cover faces */
+  --sheet-top:#f4f2ec;   /* top edges, catching the light */
+  --sheet-side:#d9d7cf;  /* faces turned away */
+  --ink:#1f2024;         /* type */
+  --ink-2:#7d7c78;       /* secondary type */
+  --ink-3:#c3c1ba;       /* hairlines, ticks */
+  --edge:rgba(31,32,36,.09);
+  --shadow:rgba(40,36,28,.18);
+  --spot:rgba(255,255,255,.75);   /* soft daylight behind the focused book */
+  --accent:#8a5a3b;      /* 赭石 ochre, for focus rings and the index only */
+  --art:none;            /* cover-art treatment */
+  --grain:.035;
+  --f-display:"Noto Serif SC","Songti SC","STSong",serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#111216;--paper-deep:#09090c;--sheet:#23242a;--sheet-top:#2d2e35;--sheet-side:#17181c;
+  --ink:#ece7dc;--ink-2:#8e8b84;--ink-3:#3a3a40;--edge:rgba(255,248,230,.07);--shadow:rgba(0,0,0,.6);
+  --spot:rgba(255,214,150,.13);--accent:#d9a46c;--art:brightness(.86) saturate(.92);--grain:.05;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#111216;--paper-deep:#09090c;--sheet:#23242a;--sheet-top:#2d2e35;--sheet-side:#17181c;
+  --ink:#ece7dc;--ink-2:#8e8b84;--ink-3:#3a3a40;--edge:rgba(255,248,230,.07);--shadow:rgba(0,0,0,.6);
+  --spot:rgba(255,214,150,.13);--accent:#d9a46c;--art:brightness(.86) saturate(.92);--grain:.05;color-scheme:dark}
+::view-transition-old(root),::view-transition-new(root){animation:none;mix-blend-mode:normal}
+::view-transition-new(root){z-index:2}
+
+html,body{height:100%}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-display);
+  display:flex;justify-content:center;overflow:hidden;
+  padding-left:max(0px,env(safe-area-inset-left,0px));padding-right:max(0px,env(safe-area-inset-right,0px));
+  -webkit-tap-highlight-color:transparent}
+.app{position:relative;width:100%;max-width:430px;height:100%;display:flex;flex-direction:column;
+  user-select:none;-webkit-user-select:none}
+@media (min-width:600px){
+  body{align-items:center;background:var(--paper-deep)}
+  .app{height:min(880px,calc(100% - 48px));border-radius:36px;background:var(--paper);
+    box-shadow:0 0 0 1px var(--edge),0 40px 80px -30px var(--shadow);overflow:hidden}
+}
+
+/* ---------- header ---------- */
+.mast{padding-top:22px;display:flex;flex-direction:column;gap:6px}
+.mast-row{display:flex;align-items:baseline;justify-content:space-between}
+.word{font-size:30px;font-weight:600;letter-spacing:.06em;line-height:1}
+.eyebrow{font-family:var(--f-mono);font-size:10px;letter-spacing:.22em;color:var(--ink-2);text-transform:uppercase}
+.region{display:flex;align-items:center;gap:10px;margin-top:18px}
+.region .rule{flex:1;height:1px;background:var(--ink-3)}
+.region .dot{width:4px;height:4px;background:var(--ink)}
+h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
+.tools{display:flex;align-items:center;gap:6px;margin-top:22px}
+.chip{display:flex;align-items:center;gap:10px;font:inherit;font-size:16px;letter-spacing:.2em;color:var(--ink);
+  background:none;border:0;padding:6px 0;cursor:pointer;flex:1;text-align:left}
+.chip .caret{margin-left:auto;margin-right:14px;color:var(--ink-2)}
+.icon-btn{width:40px;height:40px;display:grid;place-items:center;border:0;background:none;color:var(--ink);border-radius:10px;cursor:pointer}
+.icon-btn:hover,.chip:hover{background:color-mix(in oklab,var(--ink) 5%,transparent)}
+.icon-btn:focus-visible,.chip:focus-visible,.go:focus-visible,.tab:focus-visible,.stage:focus-visible{outline:1.5px solid var(--accent);outline-offset:2px}
+.count{align-self:flex-end;font-family:var(--f-mono);font-size:13px;color:var(--ink-2);letter-spacing:.12em;margin-top:6px;font-variant-numeric:tabular-nums}
+.count b{font-weight:500;color:var(--ink)}
+
+/* ---------- stage ---------- */
+.stage{position:relative;flex:1;min-height:300px;margin:0 calc(-1 * max(24px,env(safe-area-inset-left,0px))) 0;
+  perspective:1700px;perspective-origin:50% 35%;cursor:grab;touch-action:pan-y;outline:none;overflow:hidden}
+.stage.drag{cursor:grabbing}
+.spot{position:absolute;left:52%;top:50%;width:105%;aspect-ratio:1.25;max-width:none;transform:translate(-50%,-50%);
+  background:radial-gradient(closest-side,var(--spot),transparent);pointer-events:none}
+.app::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:var(--grain);z-index:5;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.theme-btn svg{transition:transform .6s cubic-bezier(.2,.9,.2,1)}
+.theme-btn .moon{display:none}
+:root[data-theme="dark"] .theme-btn .sun{display:none}
+:root[data-theme="dark"] .theme-btn .moon{display:block}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .theme-btn .sun{display:none}:root:not([data-theme="light"]) .theme-btn .moon{display:block}}
+.floor{position:absolute;left:50%;top:var(--fy,66%);width:120%;height:60px;transform:translate(-50%,-10%);
+  background:radial-gradient(50% 50% at 50% 50%,var(--shadow),transparent 70%);opacity:.55;filter:blur(6px);pointer-events:none}
+.scene{position:absolute;left:50%;top:var(--sy,49%);width:0;height:0;transform-style:preserve-3d}
+.cam{transform-style:preserve-3d;transform:rotateX(-16deg) rotateY(-30deg)}
+
+.book{position:absolute;left:0;top:0;width:var(--t);height:var(--h);margin:calc(var(--h) / -2) 0 0 calc(var(--t) / -2);
+  transform-style:preserve-3d;will-change:transform}
+.face{box-sizing:border-box;position:absolute;top:50%;left:50%;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.spine{width:var(--t);height:var(--h);margin:calc(var(--h) / -2) 0 0 calc(var(--t) / -2);
+  transform:translateZ(calc(var(--d) / 2));background:var(--sheet);
+  box-shadow:inset 0 0 0 .5px var(--edge),inset -1px 0 0 var(--edge);
+  display:flex;flex-direction:column;align-items:center;padding:8px 0 9px;gap:7px}
+.spine .no{font-family:var(--f-mono);font-size:9px;color:var(--ink-2);letter-spacing:.02em}
+.spine .tt{writing-mode:vertical-rl;font-size:10.5px;letter-spacing:.14em;line-height:1;color:var(--ink);flex:1;overflow:hidden;white-space:nowrap}
+.spine .ring{width:6px;height:6px;border-radius:50%;border:1px solid var(--ink-2)}
+.cover{width:var(--d);height:var(--h);margin:calc(var(--h) / -2) 0 0 calc(var(--d) / -2);
+  transform:rotateY(90deg) translateZ(calc(var(--t) / 2));background:var(--sheet);
+  box-shadow:inset 0 0 0 .5px var(--edge);padding:11px 11px 9px;display:flex;flex-direction:column;gap:6px}
+.cover .lbl{font-family:var(--f-mono);font-size:8.5px;letter-spacing:.14em;color:var(--ink-2)}
+.cover .art{flex:1;background-size:cover;background-position:center;box-shadow:0 0 0 .5px var(--edge);filter:var(--art)}
+.cover .code{font-family:var(--f-mono);font-size:8px;letter-spacing:.16em;color:var(--ink-2);text-align:center}
+.backside{width:var(--d);height:var(--h);margin:calc(var(--h) / -2) 0 0 calc(var(--d) / -2);
+  transform:rotateY(-90deg) translateZ(calc(var(--t) / 2));background:var(--sheet-side)}
+.top{width:var(--t);height:var(--d);margin:calc(var(--d) / -2) 0 0 calc(var(--t) / -2);
+  transform:rotateX(90deg) translateZ(calc(var(--h) / 2));background:var(--sheet-top);
+  box-shadow:inset 0 0 0 .5px var(--edge)}
+.shade{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none}
+
+/* ---------- ticks ---------- */
+.ruler{position:relative;height:18px;margin:0 0 4px;overflow:hidden;pointer-events:none;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 25%,#000 75%,transparent);mask-image:linear-gradient(90deg,transparent,#000 25%,#000 75%,transparent)}
+.ruler-track{position:absolute;left:50%;top:0;height:100%;will-change:transform}
+.tick{position:absolute;bottom:2px;width:1px;height:5px;background:var(--ink-3)}
+.tick.ten{height:9px;background:var(--ink-2)}
+.ruler::after{content:"";position:absolute;left:50%;bottom:0;width:1px;height:14px;background:var(--ink);transform:translateX(-.5px)}
+
+/* ---------- info ---------- */
+.info{position:relative;min-height:112px;display:grid;grid-template-columns:1fr auto;gap:4px 16px;align-items:start;padding-top:8px}
+.title{font-size:20px;line-height:1.55;letter-spacing:.12em;font-weight:500;text-wrap:balance;min-height:62px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.title .c{display:inline-block;will-change:transform,opacity,filter}
+.meta{grid-column:1;font-size:12.5px;letter-spacing:.14em;color:var(--ink-2)}
+.meta .sep{margin:0 .5em}
+.meta .st{color:var(--ink)}
+.go{grid-row:1;grid-column:2;width:40px;height:40px;margin-top:6px;border:0;background:none;color:var(--ink);cursor:pointer;display:grid;place-items:center;border-radius:50%;
+  transition:transform .35s cubic-bezier(.2,.9,.25,1.2)}
+.go:hover{transform:translate(2px,-2px)}
+
+/* ---------- tab bar ---------- */
+.tabs{display:flex;justify-content:space-around;align-items:center;height:62px;padding-bottom:env(safe-area-inset-bottom,0px);
+  border-top:1px solid var(--edge);background:var(--paper);position:relative;z-index:6}
+.tab{width:64px;height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:0;background:none;color:var(--ink-2);cursor:pointer;position:relative;font:inherit;font-size:10px;letter-spacing:.2em;transition:color .3s}
+.tab svg{transition:transform .45s cubic-bezier(.2,.9,.2,1.3)}
+.tab[aria-current="page"]{color:var(--ink)}
+.tab[aria-current="page"] svg{transform:translateY(-1px)}
+
+.hint{position:absolute;left:50%;top:46px;transform:translateX(-50%);font-family:var(--f-mono);font-size:10px;letter-spacing:.2em;color:var(--ink-2);
+  transition:opacity .6s;pointer-events:none;white-space:nowrap}
+.hint.gone{opacity:0}
+
+/* ---------- open-book layer ---------- */
+.app{overflow:hidden}
+.stage{overflow:visible}
+.app.is-open .stage{z-index:20}
+.veil{position:absolute;inset:0;z-index:15;background:color-mix(in oklab,var(--paper) 78%,transparent);
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);opacity:0;pointer-events:none}
+.app.is-open .veil{pointer-events:auto}
+.close{position:absolute;z-index:40;top:calc(14px + env(safe-area-inset-top,0px));right:max(14px,env(safe-area-inset-right,0px));
+  width:40px;height:40px;border-radius:50%;border:1px solid var(--edge);background:color-mix(in oklab,var(--sheet) 80%,transparent);
+  color:var(--ink);display:grid;place-items:center;cursor:pointer;opacity:0;transform:scale(.8) rotate(-45deg);pointer-events:none;
+  transition:opacity .35s,transform .5s cubic-bezier(.2,.9,.2,1.1)}
+.app.is-open .close{opacity:1;transform:none;pointer-events:auto}
+.close:focus-visible,.mode button:focus-visible,.btn:focus-visible{outline:1.5px solid var(--accent);outline-offset:2px}
+
+/* mode switch */
+.app.is-open .mode{opacity:0;pointer-events:none}
+.mode{position:absolute;left:50%;top:6px;transform:translateX(-50%);display:flex;transition:opacity .3s;padding:3px;border-radius:999px;z-index:3;
+  background:color-mix(in oklab,var(--ink) 5%,transparent);box-shadow:inset 0 0 0 1px var(--edge)}
+.mode button{position:relative;z-index:1;border:0;background:none;font:inherit;font-size:12px;letter-spacing:.18em;color:var(--ink-2);
+  padding:6px 14px 6px 12px;border-radius:999px;cursor:pointer;transition:color .3s;display:flex;gap:7px;align-items:baseline}
+.mode button b{font-family:var(--f-mono);font-weight:500;font-size:10px;letter-spacing:0}
+.mode button[aria-checked="true"]{color:var(--ink)}
+.mode .thumb{position:absolute;top:3px;bottom:3px;left:3px;border-radius:999px;background:var(--sheet);
+  box-shadow:0 1px 2px var(--shadow),0 0 0 .5px var(--edge);transition:transform .5s cubic-bezier(.2,.9,.2,1),width .5s cubic-bezier(.2,.9,.2,1)}
+
+/* A: the flat book that opens into a spread */
+.flat,.flat *{box-sizing:border-box}
+.flat{position:absolute;z-index:30;perspective:1500px;transform-style:preserve-3d}
+.flat .pg,.flat .leaf,.flat .leaf > div{position:absolute;inset:0}
+.flat .pg{background:var(--sheet);box-shadow:inset 0 0 0 .5px var(--edge),12px 18px 40px -18px var(--shadow);overflow:hidden}
+.flat .leaf{transform-origin:0 50%;transform-style:preserve-3d}
+.flat .leaf > div{backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:hidden}
+.flat .front{background:var(--sheet);box-shadow:inset 0 0 0 .5px var(--edge);display:flex;flex-direction:column}
+.flat .back{transform:rotateY(180deg);background:var(--sheet);box-shadow:inset 0 0 0 .5px var(--edge)}
+.flat .sh{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none}
+.flat .gutter{position:absolute;top:0;bottom:0;width:26px;pointer-events:none;opacity:0}
+.flat .pg .gutter{left:0;background:linear-gradient(90deg,rgba(0,0,0,.14),transparent)}
+.flat .back .gutter{right:0;background:linear-gradient(-90deg,rgba(0,0,0,.14),transparent)}
+.endpaper{position:absolute;inset:0;background:
+  repeating-linear-gradient(45deg,transparent 0 7px,var(--edge) 7px 8px),var(--sheet-top)}
+.exlibris{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:66%;padding:16px 10px 14px;background:var(--sheet);
+  border:1px solid var(--ink-3);outline:1px solid var(--ink-3);outline-offset:3px;text-align:center;display:grid;gap:8px}
+.exlibris .k{font-family:var(--f-mono);font-size:9px;letter-spacing:.32em;color:var(--ink-2)}
+.exlibris .v{font-size:13px;letter-spacing:.3em;color:var(--ink)}
+.exlibris .n{font-family:var(--f-mono);font-size:9px;letter-spacing:.16em;color:var(--accent)}
+.tp{padding:12% 11% 9%;display:flex;flex-direction:column;height:100%}
+.tp .vol{font-family:var(--f-mono);font-size:9px;letter-spacing:.24em;color:var(--ink-2)}
+.tp h2{margin:14% 0 0;font-size:clamp(15px,4.6vw,19px);line-height:1.6;letter-spacing:.14em;font-weight:600;text-wrap:balance}
+.tp .by{margin-top:10px;font-size:11.5px;letter-spacing:.24em;color:var(--ink-2)}
+.tp .seal{margin-top:auto;align-self:flex-end;width:30px;height:30px;border:1.5px solid #b5452f;color:#b5452f;
+  font-size:11px;line-height:1.05;display:grid;place-items:center;text-align:center;letter-spacing:0;opacity:.85;transform:rotate(-4deg)}
+.tp .foot{margin-top:10px;font-family:var(--f-mono);font-size:8.5px;letter-spacing:.18em;color:var(--ink-2);display:flex;justify-content:space-between}
+
+.dA{position:absolute;z-index:30;left:max(24px,env(safe-area-inset-left,0px));right:max(24px,env(safe-area-inset-right,0px));display:grid;gap:16px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--ink-3);border-bottom:1px solid var(--ink-3)}
+.stats > div{padding:10px 0 9px;display:grid;gap:3px}
+.stats > div + div{padding-left:14px;border-left:1px solid var(--ink-3)}
+.stats .k{font-family:var(--f-mono);font-size:9px;letter-spacing:.2em;color:var(--ink-2);text-transform:uppercase}
+.stats .v{font-size:17px;letter-spacing:.06em;font-variant-numeric:tabular-nums}
+.stats .v small{font-size:11px;color:var(--ink-2);margin-left:2px}
+.syn{margin:0;font-size:13.5px;line-height:1.85;letter-spacing:.06em;color:var(--ink-2);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.acts{display:flex;gap:10px;align-items:center}
+.btn{height:46px;border-radius:999px;border:1px solid var(--ink-3);background:none;color:var(--ink);font:inherit;font-size:14px;letter-spacing:.2em;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:0 18px;transition:transform .25s}
+.btn:active{transform:scale(.97)}
+.btn.primary{flex:1;background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.btn.primary small{font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;opacity:.65}
+.btn.round{width:46px;padding:0}
+.reveal{opacity:0}
+
+/* B: bottom sheet */
+.sheet{position:absolute;z-index:30;left:0;right:0;bottom:0;background:var(--sheet);border-radius:26px 26px 0 0;
+  box-shadow:0 -1px 0 var(--edge),0 -30px 60px -30px var(--shadow);
+  padding:10px max(24px,env(safe-area-inset-right,0px)) calc(22px + env(safe-area-inset-bottom,0px)) max(24px,env(safe-area-inset-left,0px));
+  display:grid;gap:14px;transform:translateY(105%);touch-action:none}
+.sheet .grab{justify-self:center;width:36px;height:4px;border-radius:2px;background:var(--ink-3);margin-bottom:4px;cursor:grab}
+.sheet .row{display:flex;justify-content:space-between;font-family:var(--f-mono);font-size:10px;letter-spacing:.2em;color:var(--ink-2)}
+.sheet h2{margin:0;font-size:22px;line-height:1.45;letter-spacing:.12em;font-weight:600;text-wrap:balance}
+.sheet .by{margin-top:-6px;font-size:12.5px;letter-spacing:.18em;color:var(--ink-2)}
+.prog{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;font-family:var(--f-mono);font-size:10px;letter-spacing:.14em;color:var(--ink-2)}
+.prog .bar{height:2px;background:var(--ink-3);position:relative;overflow:hidden}
+.prog .bar i{position:absolute;inset:0;background:var(--ink);transform-origin:0 50%;transform:scaleX(0)}
+
+/* ---------- views ---------- */
+.views{position:relative;flex:1;min-height:0}
+.view{position:absolute;inset:0;display:flex;flex-direction:column;
+  padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px));
+  visibility:hidden;pointer-events:none}
+.view.is-on{visibility:visible;pointer-events:auto}
+.view.scroll{overflow-y:auto;overscroll-behavior:contain;padding-bottom:28px;scrollbar-width:none}
+.view.scroll::-webkit-scrollbar{display:none}
+.sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.sub{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.14em;color:var(--ink-2)}
+.k{font-family:var(--f-mono);font-size:10px;letter-spacing:.2em;color:var(--ink-2)}
+.pills{display:flex;gap:6px;margin-top:16px;flex-wrap:wrap}
+.pill{height:34px;padding:0 15px;border-radius:999px;border:1px solid var(--ink-3);background:none;color:var(--ink);font:inherit;font-size:13px;letter-spacing:.16em;cursor:pointer;transition:background .3s,color .3s,border-color .3s}
+.pill[aria-checked="true"],.pill[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.pill:focus-visible,.tab:focus-visible,.seg button:focus-visible,.cell:focus-visible,.import:focus-within,.nrow:focus-visible,.ghead:focus-visible{outline:1.5px solid var(--accent);outline-offset:2px}
+
+/* notes */
+.note-list{display:flex;flex-direction:column;gap:26px;margin-top:18px}
+.ngroup{display:flex;flex-direction:column;gap:12px}
+.ghead{display:flex;align-items:center;gap:12px;border:0;background:none;padding:0;font:inherit;color:var(--ink);text-align:left;cursor:pointer;min-height:48px}
+.ghead .th{width:32px;height:44px;flex-shrink:0;background-size:cover;background-position:center;box-shadow:0 0 0 1px var(--edge),3px 4px 10px -4px var(--shadow);filter:var(--art)}
+.ghead .gt{flex:1;display:flex;flex-direction:column;gap:3px;min-width:0}
+.ghead .gt b{font-weight:500;font-size:15px;letter-spacing:.12em}
+.ghead .gt small{font-family:var(--f-mono);font-size:10px;letter-spacing:.14em;color:var(--ink-2)}
+.note{background:var(--sheet);box-shadow:0 0 0 1px var(--edge);padding:15px 16px 12px;display:flex;flex-direction:column;gap:9px}
+.note q{quotes:"「" "」";font-size:14.5px;line-height:1.85;letter-spacing:.06em}
+.note .th2{padding-top:9px;border-top:1px dashed var(--ink-3);font-size:13px;line-height:1.75;color:var(--ink-2);letter-spacing:.05em}
+.note .th2 em{font-style:normal;color:var(--accent);margin-right:6px}
+.note .mk{display:flex;align-items:center;gap:8px;font-size:14px;letter-spacing:.1em}
+.note .mk svg{color:var(--accent)}
+.note .where{font-family:var(--f-mono);font-size:10px;letter-spacing:.14em;color:var(--ink-2)}
+
+/* library */
+.search{margin-top:16px;height:44px;display:flex;align-items:center;gap:10px;padding:0 14px;background:var(--sheet);box-shadow:0 0 0 1px var(--edge);border-radius:12px;color:var(--ink-2)}
+.search input{flex:1;min-width:0;border:0;background:none;outline:none;font:inherit;font-size:14px;letter-spacing:.1em;color:var(--ink)}
+.search input::placeholder{color:var(--ink-2)}
+.lib-tabs{display:flex;gap:22px;margin-top:12px;border-bottom:1px solid var(--ink-3)}
+.lib-tabs button{height:42px;padding:0;border:0;background:none;font:inherit;font-size:14px;letter-spacing:.16em;color:var(--ink-2);cursor:pointer;position:relative}
+.lib-tabs button small{font-family:var(--f-mono);font-size:10px;margin-left:3px}
+.lib-tabs button[aria-selected="true"]{color:var(--ink)}
+.lib-tabs button[aria-selected="true"]::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--ink)}
+.lib-body{display:flex;flex-direction:column;gap:18px;margin-top:16px}
+.groups{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 calc(-1 * max(24px,env(safe-area-inset-left,0px)));padding:0 max(24px,env(safe-area-inset-left,0px))}
+.groups::-webkit-scrollbar{display:none}
+.groups .pill{flex-shrink:0;height:32px;border-radius:8px;font-size:12.5px}
+.import{display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px dashed var(--ink-3);border-radius:12px;cursor:pointer;transition:background .3s}
+.import:hover{background:color-mix(in oklab,var(--ink) 4%,transparent)}
+.import .plus{width:40px;height:40px;border-radius:50%;background:var(--ink);color:var(--paper);display:grid;place-items:center;flex-shrink:0}
+.import .txt{display:flex;flex-direction:column;gap:3px}
+.import b{font-weight:400;font-size:15px;letter-spacing:.14em}
+.import small{font-family:var(--f-mono);font-size:10px;letter-spacing:.14em;color:var(--ink-2)}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px 14px}
+.cell{display:flex;flex-direction:column;gap:7px;border:0;background:none;padding:0;font:inherit;color:var(--ink);text-align:left;cursor:pointer}
+.cell .cv{aspect-ratio:3/4.2;background:var(--sheet);box-shadow:0 0 0 1px var(--edge),4px 8px 18px -10px var(--shadow);padding:7%;display:flex;flex-direction:column;gap:5%;transition:transform .45s cubic-bezier(.2,.9,.2,1.2)}
+.cell:hover .cv{transform:translateY(-3px)}
+.cell:active .cv{transform:scale(.97)}
+.cell .cv i{flex:1;background-size:cover;background-position:center;filter:var(--art)}
+.cell .cv span{font-family:var(--f-mono);font-size:7.5px;letter-spacing:.12em;color:var(--ink-2)}
+.cell .t{font-size:12.5px;line-height:1.4;letter-spacing:.08em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cell .pb{height:2px;background:var(--ink-3);position:relative;overflow:hidden}
+.cell .pb i{position:absolute;inset:0;background:var(--ink);transform-origin:0 50%}
+.cell .st{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.12em;color:var(--ink-2)}
+.empty{margin:20px 0;text-align:center;color:var(--ink-2);font-size:13px;letter-spacing:.1em}
+
+/* me */
+.profile{display:flex;align-items:center;gap:14px;margin-top:18px}
+.avatar{width:54px;height:54px;border-radius:50%;background:radial-gradient(circle at 35% 30%,var(--sheet),var(--sheet-side));box-shadow:0 0 0 1px var(--edge)}
+.who{display:flex;flex-direction:column;gap:4px}
+.who b{font-weight:500;font-size:17px;letter-spacing:.16em}
+.who small{font-family:var(--f-mono);font-size:10px;letter-spacing:.14em;color:var(--ink-2)}
+.me-body{display:flex;flex-direction:column;gap:22px;margin-top:20px}
+.card{background:var(--sheet);box-shadow:0 0 0 1px var(--edge);padding:15px 16px}
+.week{display:flex;flex-direction:column;gap:12px}
+.row-sb{display:flex;justify-content:space-between}
+.big{display:flex;align-items:baseline;gap:5px}
+.big b{font-weight:500;font-size:28px;font-variant-numeric:tabular-nums}
+.big small{font-size:12px;color:var(--ink-2);margin-right:6px}
+.bars{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;align-items:end;height:78px}
+.bars div{display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end}
+.bars i{width:100%;background:var(--ink-3);transform-origin:50% 100%}
+.bars div.today i{background:var(--ink)}
+.bars span{font-size:10px;color:var(--ink-2)}
+.group{display:flex;flex-direction:column}
+.group > .k{padding-bottom:6px}
+.set,.nrow{min-height:54px;display:flex;align-items:center;gap:12px;border-top:1px solid var(--ink-3)}
+.set .lbl{flex:1;display:flex;flex-direction:column;gap:2px;font-size:15px;letter-spacing:.14em}
+.set .lbl small{font-size:11px;letter-spacing:.08em;color:var(--ink-2)}
+.seg{position:relative;display:flex;padding:3px;border-radius:999px;background:color-mix(in oklab,var(--ink) 7%,transparent)}
+.seg button{position:relative;z-index:1;height:30px;padding:0 13px;border:0;border-radius:999px;background:none;color:var(--ink-2);font:inherit;font-size:12px;letter-spacing:.14em;cursor:pointer;transition:color .3s}
+.seg button[aria-checked="true"]{color:var(--ink)}
+.seg .thumb{position:absolute;top:3px;bottom:3px;left:0;border-radius:999px;background:var(--sheet);box-shadow:0 1px 2px var(--shadow),0 0 0 .5px var(--edge);transition:transform .5s cubic-bezier(.2,.9,.2,1),width .5s cubic-bezier(.2,.9,.2,1)}
+.nrow{width:100%;border-left:0;border-right:0;border-bottom:0;background:none;padding:0;font:inherit;color:var(--ink);cursor:pointer;text-align:left}
+.nrow .lbl{flex:1;font-size:15px;letter-spacing:.14em}
+.nrow .val{font-size:12px;letter-spacing:.1em;color:var(--ink-2)}
+.nrow svg{color:var(--ink-2)}
+.switch{width:44px;height:26px;border-radius:13px;background:var(--ink-3);position:relative;transition:background .3s;flex-shrink:0}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--sheet);box-shadow:0 1px 2px var(--shadow);transition:transform .4s cubic-bezier(.2,.9,.2,1.2)}
+.nrow[aria-checked="true"] .switch{background:var(--ink)}
+.nrow[aria-checked="true"] .switch::after{transform:translateX(18px)}
+
+.toast{position:absolute;left:50%;bottom:calc(78px + env(safe-area-inset-bottom,0px));z-index:50;transform:translate(-50%,10px);max-width:calc(100% - 48px);
+  padding:11px 18px;border-radius:999px;background:var(--ink);color:var(--paper);font-size:13px;letter-spacing:.1em;opacity:0;pointer-events:none;transition:opacity .3s,transform .4s cubic-bezier(.2,.9,.2,1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+</style>
+
+<main class="app">
+  <div class="views" id="views">
+  <section class="view is-on" data-view="shelf" aria-label="书架">
+    <header class="mast">
+      <div class="mast-row"><span class="word">书架</span><span class="eyebrow">Personal Archive</span></div>
+      <div class="region"><span class="eyebrow">Collection / Region</span><span class="rule"></span><span class="dot"></span></div>
+      <h1>立体书架</h1>
+      <div class="tools">
+        <button class="chip" id="filter" type="button" aria-label="分组：全部书籍">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 7.5h18v11.5H3z"/><path d="M3 7.5 5.5 4h13L21 7.5"/><path d="M9 12h6"/></svg>
+          全部书籍
+          <svg class="caret" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="m3 4.5 3 3 3-3"/></svg>
+        </button>
+        <button class="icon-btn" type="button" aria-label="筛选">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 7h16M4 12h16M4 17h16"/><path d="M9 5v4M15 10v4M7 15v4" stroke-width="2"/></svg>
+        </button>
+        <button class="icon-btn" id="autoBtn" type="button" aria-label="自动翻阅" aria-pressed="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="4" width="7" height="16"/><rect x="13.5" y="4" width="7" height="7"/><rect x="13.5" y="13" width="7" height="7"/></svg>
+        </button>
+      </div>
+      <div class="count"><b id="idx">001</b> / 53 本</div>
+    </header>
+
+    <section class="stage" id="stage" tabindex="0" aria-label="书架，左右拖动或使用方向键切换书籍" aria-roledescription="carousel">
+      <div class="spot"></div>
+      <div class="floor"></div>
+      <div class="scene" id="scene"><div class="cam" id="cam"></div></div>
+      <div class="hint" id="hint">拖动书脊 · 点一本抽出来</div>
+    </section>
+
+    <div class="ruler" aria-hidden="true"><div class="ruler-track" id="ruler"></div></div>
+
+    <section class="info" aria-live="polite">
+      <div class="title" id="title"></div>
+      <button class="go" type="button" aria-label="打开这本书" id="go">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M7 17 17 7M9 7h8v8"/></svg>
+      </button>
+      <div class="meta" id="meta"></div>
+    </section>
+  </section>
+
+  <section class="view scroll" data-view="notes" aria-label="笔记">
+    <header class="mast">
+      <div class="mast-row"><span class="word">笔记</span><span class="eyebrow">Marginalia</span></div>
+      <div class="region"><span class="eyebrow">Highlights / Thoughts</span><span class="rule"></span><span class="dot"></span></div>
+      <div class="pills" id="noteFilter" role="radiogroup" aria-label="笔记类型"></div>
+      <span class="sub" id="noteSum"></span>
+    </header>
+    <div class="note-list" id="noteList"></div>
+  </section>
+
+  <section class="view scroll" data-view="library" aria-label="书库">
+    <header class="mast">
+      <div class="mast-row"><span class="word">书库</span><span class="eyebrow" id="libCount">Library</span></div>
+      <label class="search" for="libSearch">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
+        <span class="sr">搜索书库</span>
+        <input id="libSearch" type="search" placeholder="书名、作者" autocomplete="off">
+      </label>
+      <div class="lib-tabs" id="libTabs" role="tablist" aria-label="阅读状态"></div>
+    </header>
+    <div class="lib-body">
+      <div class="groups" id="libGroups"></div>
+      <label class="import" for="importFile">
+        <span class="plus"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span>
+        <span class="txt"><b>导入本地书籍</b><small>TXT · EPUB</small></span>
+        <input id="importFile" type="file" accept=".txt,.epub,text/plain,application/epub+zip" multiple class="sr">
+      </label>
+      <div class="grid" id="libGrid"></div>
+      <p class="empty" id="libEmpty" hidden>没有符合条件的书。换个关键词试试。</p>
+    </div>
+  </section>
+
+  <section class="view scroll" data-view="me" aria-label="我的">
+    <header class="mast">
+      <div class="mast-row"><span class="word">我的</span><span class="eyebrow">Reader</span></div>
+      <div class="profile">
+        <span class="avatar" aria-hidden="true"></span>
+        <span class="who"><b>读者</b><small id="meCounts"></small></span>
+      </div>
+    </header>
+    <div class="me-body">
+      <section class="card week" aria-label="本周阅读">
+        <div class="row-sb"><span class="k">本周阅读</span><span class="k">示例数据</span></div>
+        <div class="big"><b>4</b><small>小时</small><b>12</b><small>分</small></div>
+        <div class="bars" id="bars" role="img" aria-label="周一到周日的阅读时长，周四最多"></div>
+      </section>
+      <section class="group" aria-label="外观">
+        <span class="k">外观</span>
+        <div class="set"><span class="lbl">主题</span><div class="seg" id="segTheme" role="radiogroup" aria-label="主题"></div></div>
+        <div class="set"><span class="lbl">动画速率<small id="speedHint"></small></span><div class="seg" id="segSpeed" role="radiogroup" aria-label="动画速率"></div></div>
+      </section>
+      <section class="group" aria-label="阅读与数据">
+        <span class="k">阅读与数据</span>
+        <div id="meRows"></div>
+      </section>
+    </div>
+  </section>
+  </div>
+
+  <div class="veil" id="veil"></div>
+  <button class="close" id="closeBtn" type="button" aria-label="放回书架">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9"/></svg>
+  </button>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <nav class="tabs" aria-label="主导航">
+    <button class="tab" type="button" data-go="notes" aria-label="笔记"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 20h16"/><path d="M14.5 5.5 18 9l-8 8H6.5v-3.5z"/></svg><span>笔记</span></button>
+    <button class="tab" type="button" data-go="shelf" aria-label="书架" aria-current="page"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 4h3v16H4zM8.5 4h3v16h-3z"/><path d="m13.5 5.2 2.9-.8 4 15.4-2.9.8z"/></svg><span>书架</span></button>
+    <button class="tab" type="button" data-go="library" aria-label="书库"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3.5 8h17v11h-17z"/><path d="M5.5 5h13M9 12.5h6"/></svg><span>书库</span></button>
+    <button class="tab" type="button" data-go="me" aria-label="我的"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="4" y="3.5" width="16" height="17"/><circle cx="12" cy="10" r="2.6"/><path d="M7.5 17c1-2.2 2.6-3.2 4.5-3.2s3.5 1 4.5 3.2"/></svg><span>我的</span></button>
+  </nav>
+</main>
+
+<script>
+(() => {
+/* ================= data ================= */
+const TITLES = ["晚风停在第七站","海盐汽水与夏日","纸飞机寄往明天","雨季来信","我在图书馆等你","星屑坠落的屋顶","便利店的午夜诗人","灯塔守夜人的猫","樱桃色的告白练习","少女与旧唱片","第十二封信","白日梦制造所","云的另一边","青柠与薄荷之夏","不会下雪的城市","风铃响起的时候","月台上的约定","时间旅行者的早餐","蓝色电车终点站","只有我看得见的彗星","银河铁道修理工","放学后的天文社","透明的你和红茶","夏至前夜","迷路的鲸","向日葵不说话","二十二岁的旧照片","碎片与晴天","失物招领处的魔女","黄昏时分的钢琴","海边的书店","再见了，三月","和你一起看极光","秘密花园的钥匙","末班车上的猫","浅草色的约定","某个春日的雨","晴空下的告别","墨水与玻璃瓶","不眠的星期五","被遗忘的第八日","你好，旧时光","风之谷的邮差","橘子味的黄昏","冬日列车的窗","屋顶上的风筝","银杏落下的街","遥远的蓝","午后三点的猫咖啡","写给未来的日记","夜航的萤火","如果明天也晴朗","最后一页的你"];
+const AUTHORS = ["林间鹿","青木遥","白夜","苏打","七月澄","渡边栞","海鸥","雾岛灯","南风","一之濑晴","小满","纸鹤","星野澪","旧城","北川葵"];
+let seed = 20261107;
+const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
+const pick = a => a[Math.floor(rnd() * a.length)];
+const BOOKS = TITLES.map((t, i) => ({
+  no: i + 1, title: t, author: pick(AUTHORS),
+  status: rnd() < .72 ? "已完结" : "连载中",
+  code: "WK-" + String(Math.floor(rnd() * 90000) + 1000).padStart(5, "0"),
+  scene: i % 6, hue: Math.floor(rnd() * 360), s: rnd()
+}));
+const N = BOOKS.length;
+const WHO = ["转学生","图书管理员","便利店店员","天文社社长","邮差少年","失忆的少女","钢琴调音师","我的同桌"];
+const WHERE = ["旧图书馆的还书箱","末班电车的座位缝","海边灯塔的楼梯","屋顶天台的水塔","雨夜便利店的收银台","废弃天文台的望远镜"];
+const SYN = [
+  (b, w, p) => `${w}在${p}里发现了一张写着「${b.title}」的纸条。没有署名，字迹却莫名熟悉。从那天起，平静的日子一点点偏离轨道，所有线索都指向一个早已被遗忘的约定。`,
+  (b, w, p) => `那个夏天只剩最后七天。${w}说，要在${p}等一个不会来的人。于是我们开始一场注定无疾而终的寻找，直到发现，被等的人原来是自己。`,
+  (b, w, p) => `「如果世界明天就要结束，你想做什么？」${w}在${p}写下这句话。三百六十五天后，答案被一封迟到的信揭开。`
+];
+BOOKS.forEach(b => {
+  b.words = (12 + rnd() * 48).toFixed(1); b.chapters = 60 + Math.floor(rnd() * 240);
+  b.progress = 3 + Math.floor(rnd() * 90); b.reading = Math.max(1, Math.round(b.chapters * b.progress / 100));
+  b.syn = SYN[b.no % 3](b, pick(WHO), pick(WHERE));
+});
+
+/* ================= procedural covers (original art) ================= */
+const PALETTES = [
+  ["#9fc6e8","#d9ecf7","#fff3d6","#f6b48f","#4c6f94"],
+  ["#2b3a67","#5b5f97","#f2a7a9","#ffd6c0","#ffefe3"],
+  ["#f7c9b6","#fbe3d4","#a8d0c4","#5e8c8a","#2f4b4f"],
+  ["#11162e","#2a3463","#6e7fc0","#f3e1a6","#ffffff"],
+  ["#ffd8e4","#ffeef3","#b9d7ef","#6f9ac4","#3a4d6b"],
+  ["#e9e2c6","#c9b98f","#7f8f6a","#3c4a3b","#f5f0e1"],
+  ["#ff9a76","#ffc994","#fbe7c6","#6b8fb5","#2d3e5c"],
+  ["#bfe3d8","#e8f6f1","#f7d488","#ef8f6b","#40566b"]
+];
+function cover(b){
+  const W = 240, H = 320, c = document.createElement("canvas");
+  c.width = W; c.height = H;
+  const g = c.getContext("2d");
+  seed = 7919 * b.no + 17;
+  const P = PALETTES[(b.no * 5 + b.scene) % PALETTES.length];
+  const lg = (y0, y1, stops) => { const gr = g.createLinearGradient(0, y0, 0, y1); stops.forEach((s, k) => gr.addColorStop(k / (stops.length - 1), s)); return gr; };
+  const hz = H * (.52 + rnd() * .18);
+  switch (b.scene) {
+    case 0: { // sky + clouds + sun
+      g.fillStyle = lg(0, H, [P[0], P[1], P[2]]); g.fillRect(0, 0, W, H);
+      g.fillStyle = P[2]; g.globalAlpha = .9; g.beginPath(); g.arc(W * (.3 + rnd() * .4), H * .3, 26 + rnd() * 16, 0, 7); g.fill();
+      g.globalAlpha = 1;
+      for (let k = 0; k < 5; k++) cloud(g, rnd() * W, H * (.35 + rnd() * .45), 18 + rnd() * 26, "#fff");
+      g.fillStyle = P[4]; g.globalAlpha = .9; g.fillRect(0, H * .88, W, H); g.globalAlpha = 1;
+      break; }
+    case 1: { // sea at dusk
+      g.fillStyle = lg(0, hz, [P[0], P[1], P[2], P[3]]); g.fillRect(0, 0, W, hz);
+      g.fillStyle = lg(hz, H, [P[1], P[0]]); g.fillRect(0, hz, W, H - hz);
+      const sx = W * (.35 + rnd() * .3);
+      g.fillStyle = P[4]; g.beginPath(); g.arc(sx, hz, 30, Math.PI, 0); g.fill();
+      g.strokeStyle = P[3]; g.lineWidth = 2;
+      for (let y = hz + 6; y < H; y += 7 + (y - hz) * .08) { const w = 40 - (y - hz) * .05 + rnd() * 30; g.globalAlpha = .7; g.beginPath(); g.moveTo(sx - w / 2, y); g.lineTo(sx + w / 2, y); g.stroke(); }
+      g.globalAlpha = 1; break; }
+    case 2: { // town at evening
+      g.fillStyle = lg(0, H, [P[0], P[1], P[2]]); g.fillRect(0, 0, W, H);
+      for (let layer = 0; layer < 2; layer++) {
+        g.fillStyle = layer ? P[4] : P[3]; let x = -10;
+        while (x < W) { const w = 18 + rnd() * 30, h = (layer ? 60 : 100) + rnd() * 90; g.fillRect(x, H - h, w, h);
+          if (layer) { g.fillStyle = "#ffe9a8"; for (let wy = H - h + 10; wy < H - 10; wy += 12) for (let wx = x + 4; wx < x + w - 6; wx += 8) if (rnd() < .35) g.fillRect(wx, wy, 3, 4); g.fillStyle = P[4]; }
+          x += w + 2; }
+      }
+      g.strokeStyle = P[4]; g.lineWidth = 1.2; g.beginPath(); g.moveTo(0, H * .22); g.quadraticCurveTo(W / 2, H * .3, W, H * .2); g.stroke();
+      break; }
+    case 3: { // night stars + moon
+      g.fillStyle = lg(0, H, [P[0], P[1], P[2]]); g.fillRect(0, 0, W, H);
+      for (let k = 0; k < 140; k++) { g.fillStyle = `rgba(255,255,255,${.3 + rnd() * .7})`; const r = rnd() < .08 ? 1.6 : .7; g.beginPath(); g.arc(rnd() * W, rnd() * H * .8, r, 0, 7); g.fill(); }
+      g.fillStyle = P[3]; g.beginPath(); g.arc(W * .7, H * .24, 24, 0, 7); g.fill();
+      g.fillStyle = P[0]; g.beginPath(); g.arc(W * .7 + 9, H * .24 - 6, 21, 0, 7); g.fill();
+      g.strokeStyle = "rgba(255,255,255,.8)"; g.lineWidth = 1.5; g.beginPath(); const mx = rnd() * W * .5; g.moveTo(mx, 40); g.lineTo(mx + 60, 90); g.stroke();
+      g.fillStyle = "#0b0e1d"; g.beginPath(); g.moveTo(0, H); g.lineTo(0, H * .82); for (let x = 0; x <= W; x += 20) g.lineTo(x, H * (.8 + rnd() * .06)); g.lineTo(W, H); g.fill();
+      break; }
+    case 4: { // pastel petals
+      g.fillStyle = lg(0, H, [P[1], P[0], P[2]]); g.fillRect(0, 0, W, H);
+      for (let k = 0; k < 46; k++) { g.save(); g.translate(rnd() * W, rnd() * H); g.rotate(rnd() * 6.3);
+        g.fillStyle = rnd() < .5 ? "#fff" : P[0]; g.globalAlpha = .55 + rnd() * .45;
+        g.beginPath(); g.ellipse(0, 0, 3 + rnd() * 4, 1.5 + rnd() * 2, 0, 0, 7); g.fill(); g.restore(); }
+      g.globalAlpha = 1; g.strokeStyle = P[4]; g.lineWidth = 3; g.beginPath(); g.moveTo(-10, H * .1); g.bezierCurveTo(W * .4, H * .2, W * .2, H * .4, W * .5, H * .45); g.stroke();
+      break; }
+    default: { // bold geometric
+      g.fillStyle = P[4]; g.fillRect(0, 0, W, H);
+      const cols = [P[0], P[1], P[2], P[3]];
+      for (let k = 0; k < 7; k++) { g.fillStyle = cols[k % 4]; g.globalAlpha = .9;
+        if (rnd() < .5) { g.beginPath(); g.arc(rnd() * W, rnd() * H, 20 + rnd() * 60, 0, 7); g.fill(); }
+        else { g.save(); g.translate(rnd() * W, rnd() * H); g.rotate(rnd() * 3); g.fillRect(-40, -8, 80 + rnd() * 60, 16); g.restore(); } }
+      g.globalAlpha = 1;
+    }
+  }
+  // grain + light leak
+  const img = g.getImageData(0, 0, W, H), d = img.data;
+  for (let k = 0; k < d.length; k += 4) { const n = (rnd() - .5) * 14; d[k] += n; d[k + 1] += n; d[k + 2] += n; }
+  g.putImageData(img, 0, 0);
+  const lk = g.createLinearGradient(0, 0, W, H); lk.addColorStop(0, "rgba(255,255,255,.18)"); lk.addColorStop(.5, "rgba(255,255,255,0)"); g.fillStyle = lk; g.fillRect(0, 0, W, H);
+  // title stamp
+  g.fillStyle = "rgba(255,255,255,.94)"; g.fillRect(W - 40, 14, 26, Math.min(16 + b.title.length * 17, H - 60));
+  g.fillStyle = "#24252a"; g.font = '600 15px "Noto Serif SC", serif'; g.textAlign = "center";
+  [...b.title].slice(0, 14).forEach((ch, k) => g.fillText(ch, W - 27, 34 + k * 17));
+  return c.toDataURL("image/jpeg", .86);
+}
+function cloud(g, x, y, r, col){ g.fillStyle = col; g.globalAlpha = .85; g.beginPath();
+  g.arc(x, y, r, 0, 7); g.arc(x + r * .9, y + r * .2, r * .75, 0, 7); g.arc(x - r * .9, y + r * .25, r * .65, 0, 7); g.arc(x + r * .2, y - r * .5, r * .7, 0, 7); g.fill(); g.globalAlpha = 1; }
+
+/* ================= build shelf ================= */
+const stage = document.getElementById("stage"), cam = document.getElementById("cam");
+let T = 26, H = 196, D = 142;              // thickness, height, depth (cover width)
+const pad = n => String(n).padStart(2, "0");
+const trunc = s => s.length > 7 ? s.slice(0, 6) + "…" : s;
+const els = BOOKS.map(b => {
+  const el = document.createElement("div"); el.className = "book"; el.dataset.i = b.no - 1;
+  el.innerHTML =
+    `<div class="face top"></div>
+     <div class="face backside"></div>
+     <div class="face cover"><span class="lbl">NO.${String(b.no).padStart(3,"0")}</span><span class="art"></span><span class="code">${b.code}</span><div class="shade"></div></div>
+     <div class="face spine"><span class="no">${pad(b.no)}</span><span class="tt">${trunc(b.title)}</span><span class="ring"></span><div class="shade"></div></div>`;
+  cam.appendChild(el);
+  return { el, art: el.querySelector(".art"), shades: el.querySelectorAll(".shade"), spine: el.querySelector(".spine"), drawn: false, vis: null };
+});
+function sizeVars(){
+  const w = stage.clientWidth, h = stage.clientHeight;
+  const k = Math.max(.72, Math.min(1.12, Math.min(w / 400, h / 330)));
+  T = 26 * k; H = 196 * k; D = 142 * k;
+  stage.style.setProperty("--t", T + "px"); stage.style.setProperty("--h", H + "px"); stage.style.setProperty("--d", D + "px");
+}
+sizeVars(); addEventListener("resize", () => { sizeVars(); dirty = true; });
+
+const paint = i => { const e = els[i]; if (e.drawn) return; e.drawn = true; e.art.style.backgroundImage = `url(${cover(BOOKS[i])})`; };
+(document.fonts && document.fonts.ready ? Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 1200))]) : Promise.resolve())
+  .then(() => { for (let i = 0; i < N; i++) els[i].drawn = false, paint(i); });
+for (let i = 0; i < N; i++) paint(i);
+
+/* ruler */
+const ruler = document.getElementById("ruler"), TICK = 9;
+for (let i = 0; i < N; i++) { const t = document.createElement("i"); t.className = "tick" + ((i + 1) % 10 === 0 || i === 0 ? " ten" : ""); t.style.left = i * TICK + "px"; ruler.appendChild(t); }
+
+/* ================= motion ================= */
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+let pos = 0, vel = 0, target = 0, dirty = true;
+/* two rate presets: A 优雅 = slow, weighted, long settles; B 快速 = stiff springs, short timelines */
+const SPEED = {
+  A: { t: 1.4, K: 85, pullK: 36, damp: .9, auto: 2300 },
+  B: { t: .5, K: 300, pullK: 170, damp: .95, auto: 1000 }
+};
+let mode = "A";
+const sp = () => SPEED[mode], ms = n => reduce ? 0 : Math.round(n * sp().t);
+const ease = t => 1 - Math.pow(1 - t, 3);
+const smooth = t => t * t * (3 - 2 * t);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+
+/* ---------- pulling a book out ---------- */
+const app = document.querySelector(".app"), sceneEl = document.getElementById("scene");
+const veil = document.getElementById("veil"), spotEl = stage.querySelector(".spot"), floorEl = stage.querySelector(".floor");
+let sel = -1, pull = 0, pullV = 0, pullT = 0;
+let goal = [0, 0, 40], goalS = 1.2;            // where the book ends up, in view space, and its scale
+let tiltX = 0, tiltY = 0, tiltTX = 0, tiltTY = 0, clock = 0;
+const RAD = Math.PI / 180;
+// inverse of the camera (rotateX(-16) rotateY(-30)): view-space vector -> shelf space
+const CAM_INV = new DOMMatrix("rotateY(30deg) rotateX(16deg)");
+function camInv([x, y, z]){ const q = CAM_INV.transformPoint(new DOMPoint(x, y, z)); return [q.x, q.y, q.z]; }
+const f2 = n => n.toFixed(2);
+function selPose(x, y, z, ry, p){
+  const V = camInv(goal);
+  if (mode === "A") {
+    // 抽: slide straight out of the row like a drawer, then 正: turn square to the reader
+    const out = smooth(clamp(p / .42, 0, 1)), q = smooth(clamp((p - .2) / .8, 0, 1));
+    const sx = x, sy = y, sz = z + D * .85 * out;
+    const arc = Math.sin(Math.PI * q) * -18;
+    const s = lerp(1, goalS, q);
+    return `translate3d(${f2(lerp(sx, V[0], q))}px,${f2(lerp(sy, V[1], q) + arc)}px,${f2(lerp(sz, V[2], q))}px) rotateY(${f2(30 * q)}deg) rotateX(${f2(16 * q)}deg) rotateY(${f2(lerp(ry, -90, q))}deg) scale3d(${f2(s)},${f2(s)},${f2(s)})`;
+  }
+  // B — 提: lift straight up out of the row, then 捧: float toward you at a three-quarter angle
+  const up = smooth(clamp(p / .38, 0, 1)), q = smooth(clamp((p - .26) / .74, 0, 1));
+  const sy = y - H * 1.05 * up;
+  const bob = Math.sin(clock * 1.4) * 3.5 * q;
+  const s = lerp(1, goalS, q);
+  return `translate3d(${f2(lerp(x, V[0], q))}px,${f2(lerp(sy, V[1], q) + bob)}px,${f2(lerp(z, V[2], q))}px) rotateY(${f2(30 * q)}deg) rotateX(${f2(16 * q)}deg) rotateX(${f2(tiltX * q)}deg) rotateY(${f2(tiltY * q)}deg) rotateY(${f2(lerp(ry, -90 + 24, q))}deg) rotateZ(${f2(-1.5 * q)}deg) scale3d(${f2(s)},${f2(s)},${f2(s)})`;
+}
+function aimAt(cx, cy, coverW){
+  // compensate for perspective: the cover sits ~40px + half a thickness toward the viewer
+  const sr = sceneEl.getBoundingClientRect(), st = stage.getBoundingClientRect();
+  const k = 1700 / (1700 - 40 - T * .65);
+  const ox = st.left + st.width / 2, oy = st.top + st.height * .35;
+  goal = [ox + (cx - ox) / k - sr.left, oy + (cy - oy) / k - sr.top, 40];
+  goalS = coverW / D / k;
+}
+
+function layout(){
+  const S = T + 6.5;                 // spacing between spines
+  const R = D * .64, L = D * .52, X0 = D * .26;    // room opened on the right / left of the focused book
+  for (let i = 0; i < N; i++) {
+    const d = i - pos, ad = Math.abs(d), e = els[i];
+    const visible = ad < 15 || i === sel;
+    if (visible !== e.vis) { e.el.style.display = visible ? "" : "none"; e.vis = visible; }
+    if (!visible) continue;
+    const a = ad < 1 ? smooth(1 - ad) : 0;
+    const open = ease(Math.min(ad, 1)) * (d >= 0 ? R : -L);
+    const x = X0 + d * S + open - D * .1 * a;
+    const y = -H * .2 * a;
+    const z = D * .42 * a;
+    const ry = -50 * a;
+    const pl = clamp(pull, 0, 1);
+    let fade = clamp(1 - (ad - 10) / 4, 0, 1);
+    if (i === sel) {
+      e.el.style.transform = selPose(x, y, z, ry, pull);
+      e.shades[0].style.opacity = (.10 * (1 - Math.max(a, pl))).toFixed(3);
+      e.shades[1].style.opacity = (.06 * Math.max(a, pl)).toFixed(3);
+      fade = 1;
+    } else {
+      // everything else steps back into the dark while a book is out
+      const [bx, by, bz] = sel >= 0 ? camInv([0, 22 * pl, -170 * pl]) : [0, 0, 0];
+      e.el.style.transform = `translate3d(${(x + bx).toFixed(2)}px,${(y + by).toFixed(2)}px,${(z + bz).toFixed(2)}px) rotateY(${ry.toFixed(2)}deg)`;
+      e.shades[0].style.opacity = (.10 * (1 - a)).toFixed(3);   // cover darker while tucked in
+      e.shades[1].style.opacity = (.06 * a).toFixed(3);         // spine darker when turned away
+      if (sel >= 0) fade *= 1 - .92 * pl;
+    }
+    e.el.style.opacity = fade.toFixed(3);
+  }
+  const pl = sel >= 0 ? clamp(pull, 0, 1) : 0;
+  veil.style.opacity = pl.toFixed(3);
+  spotEl.style.opacity = (1 - pl).toFixed(3);
+  floorEl.style.opacity = (.55 * (1 - pl)).toFixed(3);
+  ruler.style.transform = `translateX(${(-pos * TICK).toFixed(2)}px)`;
+}
+
+/* info panel with per-character choreography */
+const titleEl = document.getElementById("title"), metaEl = document.getElementById("meta"), idxEl = document.getElementById("idx");
+let shown = -1, swapTimer = 0;
+function setInfo(i, instant){
+  if (i === shown) return; shown = i;
+  const b = BOOKS[i];
+  idxEl.textContent = String(b.no).padStart(3, "0");
+  clearTimeout(swapTimer);
+  const old = [...titleEl.querySelectorAll(".c")];
+  if (!instant && !reduce) old.forEach((c, k) => c.animate([{ opacity: 1, transform: "none", filter: "blur(0)" }, { opacity: 0, transform: "translateY(-6px)", filter: "blur(3px)" }], { duration: ms(160), delay: ms(k * 6), easing: "cubic-bezier(.4,0,1,1)", fill: "forwards" }));
+  swapTimer = setTimeout(() => {
+    titleEl.innerHTML = [...b.title].map(ch => `<span class="c">${ch === " " ? "&nbsp;" : ch}</span>`).join("");
+    metaEl.innerHTML = `${b.author}<span class="sep">·</span><span class="st">${b.status}</span>`;
+    if (!reduce) {
+      titleEl.querySelectorAll(".c").forEach((c, k) => c.animate([{ opacity: 0, transform: "translateY(10px)", filter: "blur(4px)" }, { opacity: 1, transform: "none", filter: "blur(0)" }], { duration: ms(520), delay: ms(k * 22), easing: "cubic-bezier(.16,1,.3,1)", fill: "backwards" }));
+      metaEl.animate([{ opacity: 0, transform: "translateY(6px)" }, { opacity: 1, transform: "none" }], { duration: 480, delay: 120, easing: "cubic-bezier(.16,1,.3,1)", fill: "backwards" });
+    }
+  }, instant ? 0 : ms(150));
+}
+
+let last = performance.now();
+let curView = "shelf";
+function frame(now){
+  const dt = Math.min(.034, (now - last) / 1000); last = now;
+  if (curView !== "shelf" && sel < 0) { requestAnimationFrame(frame); return; }
+  if (!dragging) {
+    if (reduce) { pos = target; vel = 0; }
+    else { const K = sp().K, C = 2 * Math.sqrt(K) * sp().damp, acc = K * (target - pos) - C * vel; vel += acc * dt; pos += vel * dt; }
+    if (Math.abs(target - pos) < .0005 && Math.abs(vel) < .001) { if (pos !== target) { pos = target; dirty = true; } }
+    else dirty = true;
+  }
+  // pull spring: a little heavier than the shelf, so the book feels like it has weight
+  if (sel >= 0) {
+    clock += dt;
+    if (reduce) { pull = pullT; pullV = 0; }
+    else { const PK = sp().pullK, PC = 2 * Math.sqrt(PK) * (sp().damp - .04); pullV += (PK * (pullT - pull) - PC * pullV) * dt; pull += pullV * dt; }
+    tiltX += (tiltTX - tiltX) * Math.min(1, dt * 6); tiltY += (tiltTY - tiltY) * Math.min(1, dt * 6);
+    dirty = true;
+    if (mode === "A" && pullT === 1 && !flatOn && pull > .995 && Math.abs(pullV) < .03 && Math.abs(pos - target) < .003) showFlat();
+    if (pullT === 0 && pull < .004 && Math.abs(pullV) < .02) { pull = 0; sel = -1; app.classList.remove("is-open"); layout(); }
+  }
+  if (dirty) { layout(); dirty = false; }
+  setInfo(clamp(Math.round(pos), 0, N - 1));
+  requestAnimationFrame(frame);
+}
+
+/* ================= input ================= */
+let dragging = false, sx = 0, sp0 = 0, lastX = 0, lastT = 0, v = 0, moved = 0;
+const pxPerBook = () => (T + 6.5) * .95;
+const go = i => { target = clamp(Math.round(i), 0, N - 1); };
+const rubber = p => p < 0 ? -Math.pow(-p, .7) * .5 : p > N - 1 ? N - 1 + Math.pow(p - N + 1, .7) * .5 : p;
+
+stage.addEventListener("pointerdown", e => {
+  if (sel >= 0) { const hb = e.target.closest(".book"); if (!hb || +hb.dataset.i !== sel) closeBook(); return; }
+  if (e.target.closest(".mode")) return;
+  dragging = true; moved = 0; sx = lastX = e.clientX; lastT = performance.now(); sp0 = pos; v = 0; vel = 0;
+  stage.setPointerCapture(e.pointerId); stage.classList.add("drag"); userActed();
+});
+stage.addEventListener("pointermove", e => {
+  if (!dragging) return;
+  const now = performance.now(), dx = e.clientX - sx;
+  moved = Math.max(moved, Math.abs(dx));
+  const inst = -(e.clientX - lastX) / pxPerBook() / Math.max(.001, (now - lastT) / 1000);
+  v = v * .7 + inst * .3; lastX = e.clientX; lastT = now;
+  pos = rubber(sp0 - dx / pxPerBook()); dirty = true;
+});
+const end = e => {
+  if (!dragging) return; dragging = false; stage.classList.remove("drag");
+  if (moved < 6) { // tap: jump to the touched book
+    const hit = document.elementFromPoint(e.clientX, e.clientY)?.closest(".book");
+    if (hit) openBook(+hit.dataset.i);
+    vel = 0; return;
+  }
+  vel = clamp(v, -40, 40);
+  go(pos + vel * .16);
+};
+stage.addEventListener("pointerup", end); stage.addEventListener("pointercancel", end);
+
+let wheelAcc = 0;
+stage.addEventListener("wheel", e => {
+  e.preventDefault(); userActed();
+  wheelAcc += (Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY);
+  const step = 40;
+  while (Math.abs(wheelAcc) >= step) { go(target + Math.sign(wheelAcc)); wheelAcc -= Math.sign(wheelAcc) * step; }
+}, { passive: false });
+stage.addEventListener("keydown", e => {
+  if (sel >= 0) return;
+  if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openBook(target); return; }
+  if (e.key === "ArrowRight") { go(target + 1); userActed(); e.preventDefault(); }
+  if (e.key === "ArrowLeft") { go(target - 1); userActed(); e.preventDefault(); }
+  if (e.key === "Home") { go(0); userActed(); }
+  if (e.key === "End") { go(N - 1); userActed(); }
+});
+
+/* the focused book answers a tap with a small lift */
+function nudge(){
+  const e = els[shown]; if (reduce) return;
+  e.spine.parentElement.querySelector(".cover").animate(
+    [{ transform: "rotateY(90deg) translateZ(calc(var(--t) / 2))" }, { transform: "rotateY(90deg) translateZ(calc(var(--t) / 2 + 10px))" }, { transform: "rotateY(90deg) translateZ(calc(var(--t) / 2))" }],
+    { duration: 420, easing: "cubic-bezier(.3,1.6,.5,1)" });
+}
+document.getElementById("go").addEventListener("click", () => openBook(target));
+
+/* ================= open / close ================= */
+let flatOn = false, flatEl = null, panelEl = null, busy = false;
+const EASE_OUT = "cubic-bezier(.16,1,.3,1)", EASE_IO = "cubic-bezier(.65,0,.2,1)";
+const icon = {
+  toc: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" stroke-linecap="round"/></svg>',
+  mark: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6.5 3.5h11v17l-5.5-4-5.5 4z"/></svg>'
+};
+const statsHTML = b => `<div class="stats">
+  <div><span class="k">字数</span><span class="v">${b.words}<small>万</small></span></div>
+  <div><span class="k">章节</span><span class="v">${b.chapters}<small>章</small></span></div>
+  <div><span class="k">读到</span><span class="v">${b.progress}<small>%</small></span></div></div>`;
+const actsHTML = b => `<div class="acts">
+  <button class="btn primary" type="button">继续阅读 <small>第 ${b.reading} 章</small></button>
+  <button class="btn round" type="button" aria-label="目录">${icon.toc}</button>
+  <button class="btn round" type="button" aria-label="书签">${icon.mark}</button></div>`;
+const stagger = (els, delay = 0, dy = 12) => els.forEach((el, k) => el.animate(
+  /* delay and spacing scale with the preset */
+  [{ opacity: 0, transform: `translateY(${dy}px)` }, { opacity: 1, transform: "none" }],
+  { duration: ms(620) || 1, delay: ms(delay + k * 70), easing: EASE_OUT, fill: "both" }));
+
+function openBook(i){
+  if (busy || sel >= 0) return;
+  i = clamp(Math.round(i), 0, N - 1);
+  clearTimeout(autoTimer); clearTimeout(idleTimer); hint.classList.add("gone");
+  go(i); sel = i; pullT = 1; pullV = 0; clock = 0; flatOn = false;
+  app.classList.add("is-open");
+  const ar = app.getBoundingClientRect(), b = BOOKS[i];
+  if (mode === "A") {
+    const w = Math.min((ar.width - 52) / 2, 176);
+    aimAt(ar.left + ar.width / 2, ar.top + 74 + (H * w / D) / 2, w);
+  } else {
+    panelEl = buildSheet(b); app.appendChild(panelEl);
+    const sh = panelEl.offsetHeight, w = Math.min(ar.width * .44, 176), ch = H * w / D;
+    aimAt(ar.left + ar.width / 2 + 6, ar.top + Math.max(70 + ch / 2, (ar.height - sh) / 2 + 6), w);
+    panelEl.animate([{ transform: "translateY(105%)" }, { transform: "translateY(0)" }],
+      { duration: ms(760) || 1, delay: ms(260), easing: EASE_OUT, fill: "forwards" });
+    stagger([...panelEl.children].slice(1), 420, 16);
+    panelEl.querySelector(".bar i").animate([{ transform: "scaleX(0)" }, { transform: `scaleX(${b.progress / 100})` }],
+      { duration: ms(1100) || 1, delay: ms(700), easing: EASE_OUT, fill: "forwards" });
+    bindSheetDrag(panelEl);
+  }
+  document.getElementById("closeBtn").focus({ preventScroll: true });
+}
+
+/* A — the 3D book hands over to a flat twin the moment it squares up, then the cover swings open */
+function showFlat(){
+  flatOn = true; busy = true;
+  const b = BOOKS[sel], e = els[sel];
+  const cr = e.el.querySelector(".cover").getBoundingClientRect(), ar = app.getBoundingClientRect();
+  const w = cr.width, h = cr.height;
+  flatEl = document.createElement("div"); flatEl.className = "flat";
+  Object.assign(flatEl.style, { left: cr.left - ar.left + "px", top: cr.top - ar.top + "px", width: w + "px", height: h + "px" });
+  const sc = w / D;  // the twin matches the 3D cover at its rendered scale
+  flatEl.innerHTML = `
+    <div class="pg"><div class="tp">
+      <span class="vol">第 ${String(b.no).padStart(3, "0")} 册 · ${b.status}</span>
+      <h2>${b.title}</h2><span class="by">${b.author} 著</span>
+      <span class="seal">${b.author.slice(0, 2).split("").join("<br>")}</span>
+      <span class="foot"><span>${b.code}</span><span>2026</span></span></div><div class="gutter"></div><div class="sh"></div></div>
+    <div class="leaf">
+      <div class="front" style="padding:${11 * sc}px ${11 * sc}px ${9 * sc}px;gap:${6 * sc}px">
+        <span style="font-family:var(--f-mono);font-size:${8.5 * sc}px;letter-spacing:.14em;color:var(--ink-2)">NO.${String(b.no).padStart(3, "0")}</span>
+        <span style="flex:1;background:${e.art.style.backgroundImage} center/cover;filter:var(--art);box-shadow:0 0 0 .5px var(--edge)"></span>
+        <span style="font-family:var(--f-mono);font-size:${8 * sc}px;letter-spacing:.16em;color:var(--ink-2);text-align:center">${b.code}</span>
+        <div class="sh"></div></div>
+      <div class="back"><div class="endpaper"></div><div class="exlibris">
+        <span class="k">EX LIBRIS</span><span class="v">私人藏书</span><span class="n">NO.${String(b.no).padStart(3, "0")} / ${String(N).padStart(3, "0")}</span></div>
+        <div class="gutter"></div><div class="sh"></div></div>
+    </div>`;
+  app.appendChild(flatEl);
+  e.el.style.visibility = "hidden";
+
+  const leaf = flatEl.querySelector(".leaf"), shF = leaf.querySelector(".front .sh"), shB = leaf.querySelector(".back .sh"), shP = flatEl.querySelector(".pg .sh");
+  const D_OPEN = ms(1150) || 1, opt = { duration: D_OPEN, delay: ms(60), easing: EASE_IO, fill: "forwards" };
+  flatEl.animate([{ transform: "translateX(0)" }, { transform: `translateX(${w / 2}px)` }], opt);
+  leaf.animate([{ transform: "rotateY(0deg)" }, { transform: "rotateY(-90deg) translateZ(6px)", offset: .5 }, { transform: "rotateY(-180deg)" }], opt);
+  shF.animate([{ opacity: 0 }, { opacity: .28 }], { ...opt, duration: D_OPEN / 2 });
+  shB.animate([{ opacity: .3 }, { opacity: .3, offset: .5 }, { opacity: 0 }], opt);
+  shP.animate([{ opacity: .14 }, { opacity: .08, offset: .5 }, { opacity: 0 }], opt);
+  flatEl.querySelectorAll(".gutter").forEach(g => g.animate([{ opacity: 0 }, { opacity: 1 }], { ...opt, delay: D_OPEN * .6, duration: ms(500) || 1 }));
+
+  panelEl = document.createElement("div"); panelEl.className = "dA";
+  panelEl.style.top = (cr.bottom - ar.top + 26) + "px";
+  panelEl.innerHTML = statsHTML(b) + `<p class="syn">${b.syn}</p>` + actsHTML(b);
+  app.appendChild(panelEl);
+  stagger([...panelEl.children], 640);
+  setTimeout(() => busy = false, ms(700));
+}
+
+/* B — bottom sheet */
+function buildSheet(b){
+  const s = document.createElement("div"); s.className = "sheet";
+  s.innerHTML = `<span class="grab"></span>
+    <div class="row"><span>NO.${String(b.no).padStart(3, "0")} / ${String(N).padStart(3, "0")}</span><span>${b.code}</span></div>
+    <h2>${b.title}</h2>
+    <span class="by">${b.author} · ${b.status}</span>
+    ${statsHTML(b)}
+    <div class="prog"><span class="bar"><i></i></span><span>${b.reading} / ${b.chapters}</span></div>
+    <p class="syn">${b.syn}</p>
+    ${actsHTML(b)}`;
+  return s;
+}
+function bindSheetDrag(s){
+  let y0 = null, dy = 0;
+  s.addEventListener("pointerdown", e => { if (e.target.closest("button")) return; y0 = e.clientY; dy = 0; s.setPointerCapture(e.pointerId); });
+  s.addEventListener("pointermove", e => { if (y0 === null) return; dy = Math.max(0, e.clientY - y0) ** .92;
+    s.getAnimations().forEach(a => a.cancel()); s.style.transform = `translateY(${dy}px)`; pullT = 1; pull = 1 - clamp(dy / 600, 0, .4); });
+  const up = () => { if (y0 === null) return; y0 = null;
+    if (dy > 90) closeBook(); else { s.animate([{ transform: `translateY(${dy}px)` }, { transform: "translateY(0)" }], { duration: 420, easing: EASE_OUT, fill: "forwards" }); s.style.transform = ""; } };
+  s.addEventListener("pointerup", up); s.addEventListener("pointercancel", up);
+}
+
+function closeBook(){
+  if (sel < 0 || busy) return;
+  busy = true;
+  const finish = () => { panelEl?.remove(); panelEl = null; flatEl?.remove(); flatEl = null; flatOn = false;
+    els[sel].el.style.visibility = ""; pullT = 0; busy = false; stage.focus({ preventScroll: true }); if (auto) idleTimer = setTimeout(tick, 5000); };
+  if (mode === "A" && flatEl) {
+    const w = flatEl.offsetWidth, leaf = flatEl.querySelector(".leaf");
+    const opt = { duration: ms(760) || 1, easing: EASE_IO, fill: "forwards" };
+    panelEl.animate([{ opacity: 1 }, { opacity: 0, transform: "translateY(8px)" }], { duration: ms(220) || 1, fill: "forwards" });
+    flatEl.querySelectorAll(".gutter").forEach(g => g.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, fill: "forwards" }));
+    leaf.animate([{ transform: "rotateY(-180deg)" }, { transform: "rotateY(0deg)" }], opt);
+    flatEl.animate([{ transform: `translateX(${w / 2}px)` }, { transform: "translateX(0)" }], opt).finished.then(finish);
+  } else if (panelEl) {
+    const cur = getComputedStyle(panelEl).transform;
+    panelEl.getAnimations().forEach(a => a.cancel());
+    panelEl.animate([{ transform: cur === "none" ? "translateY(0)" : cur }, { transform: "translateY(105%)" }], { duration: ms(380) || 1, easing: "cubic-bezier(.4,0,.8,.4)", fill: "forwards" });
+    setTimeout(finish, ms(140));
+  } else finish();
+}
+veil.addEventListener("click", closeBook);
+document.getElementById("closeBtn").addEventListener("click", closeBook);
+addEventListener("keydown", e => { if (e.key === "Escape") closeBook(); });
+app.addEventListener("pointermove", e => {
+  if (sel < 0 || mode !== "B") return;
+  const r = app.getBoundingClientRect();
+  tiltTY = ((e.clientX - r.left) / r.width - .5) * 22;
+  tiltTX = -((e.clientY - r.top) / r.height - .35) * 12;
+});
+
+/* autoplay, like the reference recording; stops when you take over */
+const autoBtn = document.getElementById("autoBtn"), hint = document.getElementById("hint");
+let auto = !reduce, autoTimer = 0, idleTimer = 0, dir = 1;
+autoBtn.setAttribute("aria-pressed", auto);
+function tick(){
+  clearTimeout(autoTimer); if (!auto) return;
+  autoTimer = setTimeout(() => { if (curView !== "shelf" || sel >= 0) return; if (target >= N - 1) dir = -1; else if (target <= 0) dir = 1; go(target + dir); tick(); }, sp().auto);
+}
+function userActed(){
+  hint.classList.add("gone");
+  clearTimeout(autoTimer); clearTimeout(idleTimer);
+  if (auto) idleTimer = setTimeout(tick, 6000);
+}
+autoBtn.addEventListener("click", () => { auto = !auto; autoBtn.setAttribute("aria-pressed", auto); if (auto) { go(target + 1); tick(); } else clearTimeout(autoTimer); });
+setTimeout(() => hint.classList.add("gone"), 4200);
+
+/* ================= app shell: tabs, pages, settings ================= */
+const root = document.documentElement;
+const VIEWS = ["notes", "shelf", "library", "me"];
+const viewEl = v => document.querySelector(`.view[data-view="${v}"]`);
+const tabs = [...document.querySelectorAll(".tab")];
+const toastEl = document.getElementById("toast");
+let toastT = 0;
+function toast(msg){
+  toastEl.textContent = msg; toastEl.classList.add("on");
+  clearTimeout(toastT); toastT = setTimeout(() => toastEl.classList.remove("on"), 2200);
+}
+
+/* reading state for the library (sample data) */
+const GROUPS = ["青春", "治愈", "奇幻", "悬疑"];
+BOOKS.forEach(b => {
+  b.group = GROUPS[b.no % 4];
+  b.state = b.no % 7 === 0 ? "want" : b.no % 3 === 0 ? "done" : "reading";
+  if (b.state === "want") { b.progress = 0; b.reading = 1; }
+  if (b.state === "done") { b.progress = 100; b.reading = b.chapters; }
+});
+const STATE_TXT = { reading: "在读", done: "读完", want: "想读" };
+const coverOf = i => els[i].art.style.backgroundImage;
+
+function switchTo(v){
+  if (sel >= 0) return;
+  if (v === curView) {                     // tapping the current tab again
+    if (v === "shelf") { go(0); userActed(); }
+    else viewEl(v).scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
+    return;
+  }
+  const from = viewEl(curView), to = viewEl(v);
+  const dir = Math.sign(VIEWS.indexOf(v) - VIEWS.indexOf(curView));
+  tabs.forEach(t => t.toggleAttribute("aria-current", t.dataset.go === v));
+  tabs.forEach(t => { if (t.dataset.go === v) t.setAttribute("aria-current", "page"); });
+  if (curView === "shelf") { clearTimeout(autoTimer); clearTimeout(idleTimer); }
+  curView = v;
+  if (v === "notes") renderNotes();
+  if (v === "library") renderLibrary();
+  if (v === "me") renderMe();
+  from.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: `translateX(${-18 * dir}px)` }],
+    { duration: ms(220) || 1, easing: "cubic-bezier(.4,0,1,1)" }).finished.then(() => { if (curView !== from.dataset.view) from.classList.remove("is-on"); });
+  to.classList.add("is-on");
+  to.animate([{ opacity: 0, transform: `translateX(${22 * dir}px)` }, { opacity: 1, transform: "none" }],
+    { duration: ms(460) || 1, delay: ms(90), easing: EASE_OUT, fill: "backwards" });
+  stagger([...to.querySelectorAll("[data-st]")].slice(0, 14), 140, 10);
+  if (v === "shelf") { dirty = true; if (auto) idleTimer = setTimeout(tick, 2500); }
+}
+tabs.forEach(t => t.addEventListener("click", () => switchTo(t.dataset.go)));
+
+/* open a book from another page: hop to the shelf, let it glide to the book, then pull it out */
+function openFrom(i){
+  switchTo("shelf");
+  setTimeout(() => openBook(i), ms(380) + 40);
+}
+
+/* ---------- 笔记 ---------- */
+const NOTES = [
+  { b: 0, type: "line", q: "末班车开走以后，站台的灯还会亮十分钟。那十分钟，是留给没赶上的人的。", th: "想把这句抄在明信片上。", ch: 12, at: "11月7日 23:04" },
+  { b: 0, type: "line", q: "风停下来的地方，就是要下车的地方。", ch: 9, at: "11月6日 22:18" },
+  { b: 0, type: "mark", ch: 14, at: "11月7日 23:10" },
+  { b: 1, type: "line", q: "夏天最后一瓶汽水，要留到开学前一晚再喝。", th: "原来不止我这样。", ch: 3, at: "11月2日 21:40" },
+  { b: 3, type: "line", q: "雨下了一整个六月，像有人在天上翻一本永远读不完的书。", ch: 7, at: "10月30日 08:12" },
+  { b: 3, type: "mark", ch: 21, at: "10月31日 07:55" },
+  { b: 7, type: "line", q: "灯塔不会说话，它只是每隔十二秒，把同一句话说一遍。", th: "十二秒，刚好一次深呼吸。", ch: 2, at: "10月26日 00:31" }
+];
+let noteType = "all";
+const NOTE_TYPES = [["all", "全部"], ["line", "划线"], ["thought", "想法"], ["mark", "书签"]];
+function renderNotes(){
+  const f = document.getElementById("noteFilter");
+  f.innerHTML = NOTE_TYPES.map(([k, l]) => `<button class="pill" type="button" role="radio" aria-checked="${k === noteType}" data-k="${k}">${l}</button>`).join("");
+  const list = NOTES.filter(n => noteType === "all" || (noteType === "thought" ? n.th : n.type === noteType));
+  const books = [...new Set(list.map(n => n.b))];
+  document.getElementById("noteSum").textContent = `${list.length} 条 · 来自 ${books.length} 本书 · 最近在前`;
+  const bm = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M6.5 3.5h11v17l-5.5-4-5.5 4z"/></svg>';
+  document.getElementById("noteList").innerHTML = books.map(bi => {
+    const b = BOOKS[bi], ns = list.filter(n => n.b === bi);
+    return `<section class="ngroup" data-st>
+      <button class="ghead" type="button" data-open="${bi}"><span class="th" style='background-image:${coverOf(bi)}'></span>
+        <span class="gt"><b>${b.title}</b><small>${b.author} · ${ns.length} 条</small></span>
+        <svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="m4.5 3 3 3-3 3"/></svg></button>
+      ${ns.map(n => `<article class="note">${n.type === "mark"
+        ? `<span class="mk">${bm}书签 · 第 ${n.ch} 章</span>`
+        : `<q>${n.q}</q>${n.th ? `<span class="th2"><em>想法</em>${n.th}</span>` : ""}`}
+        <span class="where">第 ${n.ch} 章 · ${n.at}</span></article>`).join("")}
+    </section>`;
+  }).join("") || `<p class="empty">这一类还没有笔记。</p>`;
+}
+document.getElementById("noteFilter").addEventListener("click", e => {
+  const b = e.target.closest(".pill"); if (!b) return;
+  noteType = b.dataset.k; renderNotes();
+  stagger([...document.querySelectorAll("#noteList [data-st]")], 0, 8);
+});
+document.getElementById("noteList").addEventListener("click", e => {
+  const h = e.target.closest("[data-open]"); if (h) openFrom(+h.dataset.open);
+});
+
+/* ---------- 书库 ---------- */
+let libState = "all", libGroup = "", libQ = "";
+function renderLibrary(animate){
+  const count = k => BOOKS.filter(b => k === "all" || b.state === k).length;
+  document.getElementById("libCount").textContent = `Library · ${N}`;
+  document.getElementById("libTabs").innerHTML = [["all", "全部"], ["reading", "在读"], ["done", "读完"], ["want", "想读"]]
+    .map(([k, l]) => `<button type="button" role="tab" aria-selected="${k === libState}" data-k="${k}">${l}<small>${count(k)}</small></button>`).join("");
+  document.getElementById("libGroups").innerHTML = GROUPS.map(g => `<button class="pill" type="button" aria-pressed="${g === libGroup}" data-g="${g}">${g} · ${BOOKS.filter(b => b.group === g).length}</button>`).join("")
+    + `<button class="pill" type="button" data-new style="border-style:dashed;color:var(--ink-2)">＋ 新建分组</button>`;
+  const q = libQ.trim().toLowerCase();
+  const list = BOOKS.filter(b => (libState === "all" || b.state === libState) && (!libGroup || b.group === libGroup)
+    && (!q || b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q)));
+  document.getElementById("libGrid").innerHTML = list.map(b => `<button class="cell" type="button" data-open="${b.no - 1}" data-st aria-label="${b.title}，${STATE_TXT[b.state]}">
+    <span class="cv"><span>NO.${String(b.no).padStart(3, "0")}</span><i style='background-image:${coverOf(b.no - 1)}'></i></span>
+    <span class="t">${b.title}</span>
+    <span class="pb"><i style="transform:scaleX(${b.progress / 100})"></i></span>
+    <span class="st">${b.state === "reading" ? b.progress + "%" : STATE_TXT[b.state]}</span></button>`).join("");
+  document.getElementById("libEmpty").hidden = list.length > 0;
+  if (animate) stagger([...document.querySelectorAll("#libGrid [data-st]")].slice(0, 12), 0, 8);
+}
+document.getElementById("libTabs").addEventListener("click", e => { const b = e.target.closest("[data-k]"); if (!b) return; libState = b.dataset.k; renderLibrary(true); });
+document.getElementById("libGroups").addEventListener("click", e => {
+  const b = e.target.closest(".pill"); if (!b) return;
+  if (b.hasAttribute("data-new")) { toast("新建分组：下一步设计"); return; }
+  libGroup = libGroup === b.dataset.g ? "" : b.dataset.g; renderLibrary(true);
+});
+document.getElementById("libSearch").addEventListener("input", e => { libQ = e.target.value; renderLibrary(); });
+document.getElementById("libGrid").addEventListener("click", e => { const c = e.target.closest("[data-open]"); if (c) openFrom(+c.dataset.open); });
+document.getElementById("importFile").addEventListener("change", e => {
+  const fs = [...e.target.files]; if (!fs.length) return;
+  const f = fs[0], kb = Math.max(1, Math.round(f.size / 1024));
+  toast(fs.length > 1 ? `已读取 ${fs.length} 个文件（原型未接入书架）` : `已读取《${f.name.replace(/\.(txt|epub)$/i, "")}》· ${kb} KB（原型未接入书架）`);
+  e.target.value = "";
+});
+
+/* ---------- 我的 ---------- */
+function seg(el, opts, cur, onPick){
+  el.innerHTML = `<i class="thumb"></i>` + opts.map(([k, l]) => `<button type="button" role="radio" aria-checked="${k === cur}" data-k="${k}">${l}</button>`).join("");
+  const place = () => { const b = el.querySelector('[aria-checked="true"]'), t = el.querySelector(".thumb"); if (!b) return; t.style.width = b.offsetWidth + "px"; t.style.transform = `translateX(${b.offsetLeft}px)`; };
+  place();
+  el.onclick = e => { const b = e.target.closest("button"); if (!b) return;
+    el.querySelectorAll("button").forEach(x => x.setAttribute("aria-checked", x === b)); place(); onPick(b.dataset.k, b); };
+}
+const themeNow = () => root.dataset.theme || "auto";
+function setTheme(v, from){
+  const apply = () => { if (v === "auto") delete root.dataset.theme; else root.dataset.theme = v;
+    try { v === "auto" ? localStorage.removeItem("shelf-theme") : localStorage.setItem("shelf-theme", v); } catch (_) {} };
+  if (!document.startViewTransition || reduce || !from) { apply(); return; }
+  const r = from.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  const rad = Math.hypot(Math.max(cx, innerWidth - cx), Math.max(cy, innerHeight - cy));
+  document.startViewTransition(apply).ready.then(() => root.animate(
+    { clipPath: [`circle(0px at ${cx}px ${cy}px)`, `circle(${rad}px at ${cx}px ${cy}px)`] },
+    { duration: ms(560) || 1, easing: "cubic-bezier(.65,0,.15,1)", pseudoElement: "::view-transition-new(root)" }));
+}
+try { const saved = localStorage.getItem("shelf-theme"); if (saved) root.dataset.theme = saved; } catch (_) {}
+try { const sv = localStorage.getItem("shelf-speed"); if (sv === "A" || sv === "B") mode = sv; } catch (_) {}
+const SPEED_HINT = { A: "舒展、有分量，抽书时会翻开成跨页", B: "跟手、干脆，抽书后弹出信息卡" };
+function renderMe(){
+  const n = k => BOOKS.filter(b => b.state === k).length;
+  document.getElementById("meCounts").textContent = `藏书 ${N} · 在读 ${n("reading")} · 读完 ${n("done")}`;
+  const mins = [32, 48, 20, 65, 18, 40, 29], lab = ["一", "二", "三", "四", "五", "六", "日"];
+  const bars = document.getElementById("bars");
+  bars.innerHTML = mins.map((m, i) => `<div class="${i === 6 ? "today" : ""}"><i style="height:${Math.round(m / 65 * 58)}px"></i><span>${lab[i]}</span></div>`).join("");
+  if (!reduce) bars.querySelectorAll("i").forEach((b, i) => b.animate([{ transform: "scaleY(0)" }, { transform: "scaleY(1)" }], { duration: ms(700), delay: ms(200 + i * 50), easing: EASE_OUT, fill: "backwards" }));
+  seg(document.getElementById("segTheme"), [["light", "浅色"], ["dark", "深色"], ["auto", "跟随"]], themeNow(), (k, b) => setTheme(k, b));
+  document.getElementById("speedHint").textContent = SPEED_HINT[mode];
+  seg(document.getElementById("segSpeed"), [["A", "优雅"], ["B", "快速"]], mode, k => {
+    mode = k; try { localStorage.setItem("shelf-speed", k); } catch (_) {}
+    const h = document.getElementById("speedHint"); h.textContent = SPEED_HINT[k];
+    if (!reduce) h.animate([{ opacity: 0, transform: "translateY(4px)" }, { opacity: 1, transform: "none" }], { duration: ms(400), easing: EASE_OUT });
+    toast(k === "A" ? "已切换为 优雅" : "已切换为 快速");
+  });
+  const chev = '<svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="m4.5 3 3 3-3 3"/></svg>';
+  document.getElementById("meRows").innerHTML = `
+    <button class="nrow" type="button" role="switch" aria-checked="${auto}" data-row="auto"><span class="lbl">书架自动翻阅</span><span class="switch" aria-hidden="true"></span></button>
+    <button class="nrow" type="button" data-row="排版与字体"><span class="lbl">排版与字体</span><span class="val">宋体 · 18</span>${chev}</button>
+    <button class="nrow" type="button" data-row="翻页方式"><span class="lbl">翻页方式</span><span class="val">仿真</span>${chev}</button>
+    <button class="nrow" type="button" data-row="备份与同步"><span class="lbl">备份与同步</span><span class="val">未开启</span>${chev}</button>
+    <button class="nrow" type="button" data-row="关于"><span class="lbl">关于</span><span class="val">原型 v0.4</span>${chev}</button>`;
+}
+document.getElementById("meRows").addEventListener("click", e => {
+  const r = e.target.closest("[data-row]"); if (!r) return;
+  if (r.dataset.row === "auto") { auto = !auto; r.setAttribute("aria-checked", auto); autoBtn.setAttribute("aria-pressed", auto); toast(auto ? "书架会自动翻阅" : "已关闭自动翻阅"); return; }
+  toast(`「${r.dataset.row}」：下一步设计`);
+});
+document.getElementById("filter").addEventListener("click", () => toast("分组切换：下一步设计"));
+
+/* system back (Android app shell calls this): close the open book, else return to the shelf */
+window.__back = () => {
+  if (sel >= 0) { closeBook(); return true; }
+  if (curView !== "shelf") { switchTo("shelf"); return true; }
+  return false;
+};
+
+/* entrance: the row slides in and settles on the third book */
+pos = reduce ? 2 : -9; target = 2;
+setInfo(2, true);
+requestAnimationFrame(frame);
+setTimeout(tick, 1600);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- three spines and one book pulled forward, as on the shelf -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#1f2024" android:pathData="M33,38h6v34h-6z" />
+    <path android:fillColor="#1f2024" android:pathData="M41,38h6v34h-6z" />
+    <path android:fillColor="#1f2024" android:pathData="M49,38h6v34h-6z" />
+    <path android:fillColor="#1f2024" android:pathData="M59,32h18v36h-18z" />
+    <path android:fillColor="#f2f1ec" android:pathData="M62,36h12v22h-12z" />
+    <path android:fillColor="#1f2024" android:pathData="M64,62h8v2h-8z" />
+</vector>

@@ -1,0 +1,54 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Build
+        run: gradle :app:assembleRelease --no-daemon --stacktrace
+
+      - name: Name the APK
+        run: |
+          mkdir -p out
+          cp app/build/outputs/apk/release/app-release.apk out/book.apk
+          cp out/book.apk "out/book-0.4.${{ github.run_number }}.apk"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: book-apk
+          path: out/*.apk
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v0.4.${{ github.run_number }}
+          name: 书架原型 v0.4.${{ github.run_number }}
+          body: |
+            书架 App 可点击原型（安卓）。
+            下载 `book.apk`，在手机上打开安装（需要允许“安装未知来源应用”）。
+            每次构建用同一把签名，新版本可以直接覆盖安装。
+          files: |
+            out/book.apk
+            out/book-0.4.${{ github.run_number }}.apk
+          make_latest: true
