@@ -3052,7 +3052,7 @@ function sxRender(){
       <button class="sx-open" type="button" data-open="${esc(b.t)}" data-a="${esc(b.a || "")}">
         <span class="sx-c">${b.cover ? `<img alt="" src="${esc(b.cover)}" loading="lazy" referrerpolicy="no-referrer">` : `<img alt="" src="${b.own != null ? coverOf(b.own).slice(5, -2) : recCover(b)}">`}</span>
         <span class="sx-i"><b>${mark(b.t, q)}</b>
-          <small>${mark(b.a || "佚名", q)}${b.cat ? " · " + esc(b.cat) : ""}${b.words ? ` · ${b.words}万字` : ""}${b.status ? " · " + esc(b.status) : ""}</small>
+          <small>${mark(b.a || "佚名", q)}${b.cat ? " · " + esc(b.cat) : ""}${b.words ? ` · ${/字|万/.test(b.words) ? esc(b.words) : esc(b.words) + "万字"}` : ""}${b.status ? " · " + esc(b.status) : ""}</small>
           ${b.syn ? `<span class="sx-syn">${esc(b.syn)}</span>` : ""}
           <span class="sx-meta">${b.own != null ? `<i class="sx-tag own">书架</i>` : ""}${b.remote ? `<i class="sx-tag live">${esc(b.remote)}</i>` : b.own == null ? `<i class="sx-tag">演示数据</i>` : ""}${b.sc ? `<i class="sx-sc">${b.sc.toFixed(1)} 分</i>` : ""}</span></span></button>
       ${b.own == null ? `<button class="want" type="button" data-want="${esc(b.t)}" aria-pressed="${wanted.has(b.t)}">${wanted.has(b.t) ? "✓ 已想读" : "＋ 想读"}</button>` : ""}</div>`;
@@ -3144,6 +3144,36 @@ function gbkEncode(s){
   }
   return [...s].map(c => c.charCodeAt(0) < 128 ? encodeURIComponent(c) : gbkTable.get(c) || encodeURIComponent(c)).join("");
 }
+/* ---------- the bits of Java that Legado rules reach through Rhino (Packages.org.jsoup…, java.util…) ---------- */
+class LgEls extends Array {
+  size(){ return this.length; } get(i){ return this[i]; } first(){ return this[0] || null; } last(){ return this[this.length - 1] || null; } isEmpty(){ return !this.length; }
+  select(s){ return LgEls.from(this.flatMap(e => e.select(s))); } text(){ return this.map(e => e.text()).join(" "); } html(){ return this.map(e => e.html()).join("\n"); }
+  outerHtml(){ return this.map(e => e.outerHtml()).join("\n"); } attr(n){ for (const e of this) { const v = e.attr(n); if (v) return v; } return ""; } eachText(){ return LgList.from(this.map(e => e.text())); }
+  eachAttr(n){ return LgList.from(this.map(e => e.attr(n)).filter(Boolean)); } remove(){ this.forEach(e => e.remove()); return this; } eq(i){ return LgEls.from(this[i] ? [this[i]] : []); }
+}
+const lgJWrap = new WeakMap();
+function lgJEl(node){
+  if (!node) return null;
+  let w = lgJWrap.get(node); if (w) return w;
+  const els = list => LgEls.from([...list].map(lgJEl));
+  w = { _n: node,
+    select: s => els(lgQuery(node, String(s))), selectFirst: s => lgJEl(lgQuery(node, String(s))[0]), getElementsByTag: t => els(node.getElementsByTagName(t)),
+    getElementsByClass: c => els(node.getElementsByClassName(c)), getElementById: i => lgJEl(node.querySelector?.(`[id="${i}"]`)),
+    text: () => (node.textContent || "").replace(/\s+/g, " ").trim(), ownText: () => lgOwnText(node).join(" "), wholeText: () => node.textContent || "",
+    html: () => node.innerHTML ?? "", outerHtml: () => node.outerHTML ?? "", attr: n => node.getAttribute?.(n) || "", hasAttr: n => !!node.hasAttribute?.(n),
+    absUrl: n => { try { return new URL(node.getAttribute(n) || "", node.baseURI).href; } catch (_) { return ""; } },
+    tagName: () => (node.tagName || "").toLowerCase(), nodeName: () => (node.nodeName || "").toLowerCase(), id: () => node.id || "", className: () => node.className || "",
+    children: () => els(node.children || []), child: i => lgJEl((node.children || [])[i]), parent: () => lgJEl(node.parentElement),
+    nextElementSibling: () => lgJEl(node.nextElementSibling), previousElementSibling: () => lgJEl(node.previousElementSibling),
+    remove: () => { node.remove?.(); return w; }, toString: () => node.outerHTML ?? "" };
+  lgJWrap.set(node, w);
+  return w;
+}
+class LgList extends Array { add(x){ this.push(x); return true; } size(){ return this.length; } get(i){ return this[i]; } isEmpty(){ return !this.length; } contains(x){ return this.includes(x); } }
+class LgHashMap extends Map { put(k, v){ this.set(k, v); return v; } containsKey(k){ return this.has(k); } }
+const lgJsoup = { parse: (html, base) => { const d = new DOMParser().parseFromString(String(html ?? ""), "text/html"); if (base) { const b = d.createElement("base"); b.href = String(base); d.head.prepend(b); } return lgJEl(d.documentElement); } };
+const LgPackages = { org: { jsoup: { Jsoup: lgJsoup } }, java: { util: { ArrayList: LgList, LinkedList: LgList, HashMap: LgHashMap, LinkedHashMap: LgHashMap },
+  lang: { String: s => String(s) } } };
 const lgVars = new Map();
 /* @put / @get values belong to one book (Legado keeps them on the book): swap them in and out around each book's rules */
 function lgUseVars(vars){ for (const k of [...lgVars.keys()]) if (!k.startsWith("cache:")) lgVars.delete(k); for (const [k, v] of Object.entries(vars || {})) lgVars.set(k, v); }
@@ -3202,9 +3232,9 @@ function lgJs(code, env){
   const g = globalThis, keep = { java: g.java, source: g.source, cookie: g.cookie, cache: g.cache };
   Object.assign(g, { java, source: env.source || {}, cookie, cache: lgCache });
   try {
-    return new Function("java", "result", "baseUrl", "key", "page", "source", "book", "chapter", "cookie", "cache", "src", "title", "nextChapterUrl",
+    return new Function("java", "result", "baseUrl", "key", "page", "source", "book", "chapter", "cookie", "cache", "src", "title", "nextChapterUrl", "Packages", "org",
       "return eval(" + JSON.stringify(lib ? lib + "\n;" + code : code) + ")")(java, env.result, env.baseUrl || "", env.key ?? "", env.page ?? 1, env.source || {},
-        env.book || {}, env.chapter || {}, cookie, lgCache, env.src ?? env.result, env.chapter?.title || "", "");
+        env.book || {}, env.chapter || {}, cookie, lgCache, env.src ?? env.result, env.chapter?.title || "", "", LgPackages, LgPackages.org);
   } finally { Object.assign(g, keep); }
 }
 /* split on a separator that is not inside brackets, braces or quotes */
@@ -3279,13 +3309,18 @@ function lgPickIdx(list, spec, excl, ranged){
 /* CSS, plus the Jsoup-only pseudo-classes rules often use: :gt(n) :lt(n) :eq(n) :contains(text) / :containsOwn(text) */
 function lgQuery(el, sel){
   try { return [...el.querySelectorAll(sel)]; } catch (_) {}
-  const parts = sel.split(","), out = [];
+  const parts = lgSplit(sel, ","), out = [];
   for (let part of parts) {
     const filters = [];
+    /* Jsoup accepts unquoted values ([href*=.html]) and treats [attr~=x] as a regular expression */
+    part = part.replace(/\[([\w:-]+)~=([^\]]+)\]/g, (_, a, re) => { filters.push(["re", [a, re.replace(/^["']|["']$/g, "")]]); return `[${a}]`; })
+      .replace(/\[([\w:-]+)([*^$|]?=)([^\]"']+)\]/g, (_, a, op, v) => `[${a}${op}"${v.trim()}"]`);
     part = part.replace(/:(gt|lt|eq)\((-?\d+)\)|:(contains|containsOwn)\((["']?)(.*?)\4\)/g, (_, k, n, c, q, t) => { filters.push(k ? [k, +n] : [c, t]); return ""; }).trim() || "*";
     let got; try { got = [...el.querySelectorAll(part)]; } catch (_) { continue; }
     for (const [k, v] of filters) got = k === "gt" ? got.slice(v + 1) : k === "lt" ? got.slice(0, Math.max(0, v)) : k === "eq" ? (got[v < 0 ? got.length + v : v] ? [got[v < 0 ? got.length + v : v]] : [])
-      : k === "contains" ? got.filter(e => e.textContent.includes(v)) : got.filter(e => lgOwnText(e).join(" ").includes(v));
+      : k === "contains" ? got.filter(e => e.textContent.includes(v))
+      : k === "re" ? got.filter(e => { try { return new RegExp(v[1]).test(e.getAttribute(v[0]) || ""); } catch (_) { return false; } })
+      : got.filter(e => lgOwnText(e).join(" ").includes(v));
     out.push(...got);
   }
   return [...new Set(out)];
@@ -3417,12 +3452,37 @@ function lgRequest(src, q){
   const base = src.url.replace(/#.*$/, "");
   return lgBuildReq(src, src.search.url, base, { key: q, page: 1, baseUrl: base, source: lgSource(src) }, q);
 }
+/* {{ … }} with balanced braces (the inside is often a whole JS function) */
+function lgTemplates(str, fn){
+  let out = "", i = 0;
+  while (i < str.length) {
+    const a = str.indexOf("{{", i);
+    if (a < 0) { out += str.slice(i); break; }
+    let depth = 0, j = a + 2, end = -1;
+    for (; j < str.length; j++) {
+      const c = str[j];
+      if (c === "{") depth++;
+      else if (c === "}") { if (depth === 0 && str[j + 1] === "}") { end = j; break; } depth = Math.max(0, depth - 1); }
+    }
+    if (end < 0) { out += str.slice(i); break; }
+    out += str.slice(i, a) + fn(str.slice(a + 2, end).trim());
+    i = end + 2;
+  }
+  return out;
+}
 /* any Legado address: url,{"method","body","charset","headers","webView","webJs","type"} — q is the search word, if any */
 function lgBuildReq(src, raw, base, env, q){
   env = { page: 1, source: src ? lgSource(src) : {}, ...env, baseUrl: base };
   raw = String(raw).trim(); let opts = {};
   if (/^@js:/i.test(raw)) raw = String(lgJs(raw.slice(4), env));
   else if (/^<js>[\s\S]*<\/js>$/i.test(raw)) raw = String(lgJs(raw.slice(4, -5), env));
+  /* every {{…}} is worked out before the address and its options are told apart; the search word waits for the charset */
+  const KEYMARK = "\u0001KEY\u0001";
+  raw = lgTemplates(raw, e => {
+    if (e === "key") return q != null ? KEYMARK : "{{key}}";
+    if (e === "page") return "1";
+    try { const v = lgJs(e, env); return v == null ? "" : String(v); } catch (_) { return ""; }
+  });
   /* options after the address: url,{"method":"POST","body":"…","charset":"gbk","headers":{…}} */
   for (let i = raw.indexOf(","); i >= 0; i = raw.indexOf(",", i + 1)) {
     const tail = raw.slice(i + 1).trim();
@@ -3441,11 +3501,17 @@ function lgBuildReq(src, raw, base, env, q){
       if (e === "key" && q != null) return json ? JSON.stringify(q).slice(1, -1) : enc(q);
       if (e === "page") return "1";
       try { const v = lgJs(e, env); return v == null ? "" : String(v); } catch (_) { return ""; } })
-    .replace(/searchKey/g, m => q == null ? m : json ? q : enc(q)).replace(/searchPage([-+]1)?/g, (m, d) => q == null ? m : String(1 + (+d || 0)));
+    .replace(/searchKey/g, m => q == null || modern ? m : json ? q : enc(q)).replace(/searchPage([-+]1)?/g, (m, d) => q == null || modern ? m : String(1 + (+d || 0)));
+  /* searchKey / searchPage are 阅读 2's tokens: only for addresses without {{key}} (a field may be called searchKey) */
+  const modern = raw.includes(KEYMARK) || (typeof body === "string" && body.includes(KEYMARK)) || (body && typeof body === "object" && JSON.stringify(body).includes(KEYMARK));
+  const putKey = (s, json) => String(s).split(KEYMARK).join(q == null ? "" : json ? JSON.stringify(q).slice(1, -1) : enc(q));
+  raw = putKey(raw);
+  if (typeof body === "string") body = putKey(body, /^\s*[{[]/.test(body));
   let url = fill(raw).replace(/<([^<>,]*),[^<>]*>/g, "$1");
   if (!/^data:/i.test(url)) url = new URL(url, base).href;
   if (body != null && typeof body === "object") body = fill(JSON.stringify(body), true);
   else if (body != null) body = fill(body, /^\s*[{[]/.test(body));
+  if (body != null) body = putKey(body, /^\s*[{[]/.test(body));
   let headers = {};
   try {
     let h = src?.search?.header || "";
@@ -3694,8 +3760,10 @@ async function lgChapter(b, n){
     ch.pages = pages; ch.text = ""; b.lg.comic = true;
     return "";
   }
-  let text = lgPlain(parts.join("\n"));
-  if (C.replaceRegex) { const [, re, rp = ""] = lgSplit(C.replaceRegex.trim().replace(/^(?!##)/, "##"), "##"); if (re) text = lgReplace(text, re, rp, false); }
+  /* as Legado: replaceRegex works on the chapter's html (lines trimmed), before tags are stripped */
+  let html = parts.join("\n").split("\n").map(l => l.trim()).join("\n");
+  if (C.replaceRegex) { const [, re, rp = ""] = lgSplit(C.replaceRegex.trim().replace(/^(?!##)/, "##"), "##"); if (re) html = lgReplace(html, re, rp, false); }
+  const text = lgPlain(html);
   ch.text = text;
   return text;
 }
