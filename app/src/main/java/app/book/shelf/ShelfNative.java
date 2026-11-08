@@ -72,7 +72,7 @@ final class ShelfNative {
             try {
                 String[] r = send(reqJson);
                 reply = "{\"text\":" + JSONObject.quote(r[0]) + ",\"url\":" + JSONObject.quote(r[1]) + "}";
-            } catch (Exception e) {
+            } catch (Throwable e) {   // always answer, or the page would only see a timeout
                 reply = "{\"err\":" + JSONObject.quote(why(e)) + "}";
             }
             final String js = "window.__shelfFetched && window.__shelfFetched(" + JSONObject.quote(id) + "," + reply + ")";
@@ -80,9 +80,13 @@ final class ShelfNative {
         }, "shelf-request").start();
     }
 
-    private static String why(Exception e) {
+    private static String why(Throwable e) {
         if (e instanceof java.net.UnknownHostException) return "找不到服务器（" + e.getMessage() + "）";
-        if (e instanceof java.net.SocketTimeoutException) return "超时";
+        if (e instanceof java.net.SocketTimeoutException) {
+            String m = String.valueOf(e.getMessage()).toLowerCase();
+            return m.contains("connect") ? "连接超时：连不上服务器（可能被服务器屏蔽，或网络 / VPN 不通）"
+                    : "服务器响应超时：已经连上，但服务器一直没有返回";
+        }
         if (e instanceof javax.net.ssl.SSLException) return "安全连接失败：" + e.getMessage();
         if (e instanceof java.net.ConnectException) return "连不上服务器";
         return e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
@@ -100,8 +104,8 @@ final class ShelfNative {
             for (int hop = 0; hop < 5; hop++) {
                 HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
                 c.setInstanceFollowRedirects(false);
-                c.setConnectTimeout(15000);
-                c.setReadTimeout(20000);
+                c.setConnectTimeout(12000);
+                c.setReadTimeout(25000);
                 c.setRequestMethod(method);
                 boolean hasUa = false, hasType = false;
                 if (headers != null) {
