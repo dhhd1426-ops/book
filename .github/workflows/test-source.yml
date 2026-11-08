@@ -1,0 +1,40 @@
+# 书源实测：在 GitHub 的服务器上用真实网络导入一个书源，跑「搜索 → 详情 → 目录 → 正文」。不编译、不打包。
+# 手动运行：Actions → 书源实测 → Run workflow，填书源地址和关键词。截图在运行结果的 Artifacts 里。
+name: 书源实测
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: "书源地址（.json）"
+        required: true
+      key:
+        description: "搜索关键词（留空用书源自带的测试词）"
+        required: false
+        default: ""
+      max:
+        description: "最多测几个源"
+        required: false
+        default: "10"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: 安装 Playwright
+        run: |
+          npm i --no-save playwright@1.48.2
+          npx playwright install --with-deps chromium
+      - name: 实测
+        run: node tools/source_test.js "${{ github.event.inputs.url }}" "${{ github.event.inputs.key }}" "${{ github.event.inputs.max }}"
+      - name: 截图
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: 书源实测截图
+          path: tools/out/

@@ -3276,7 +3276,20 @@ function lgPickIdx(list, spec, excl, ranged){
   });
   return list.filter((_, k) => excl ? !keep.has(k) : keep.has(k));
 }
-function lgQuery(el, sel){ try { return [...el.querySelectorAll(sel)]; } catch (_) { return []; } }
+/* CSS, plus the Jsoup-only pseudo-classes rules often use: :gt(n) :lt(n) :eq(n) :contains(text) / :containsOwn(text) */
+function lgQuery(el, sel){
+  try { return [...el.querySelectorAll(sel)]; } catch (_) {}
+  const parts = sel.split(","), out = [];
+  for (let part of parts) {
+    const filters = [];
+    part = part.replace(/:(gt|lt|eq)\((-?\d+)\)|:(contains|containsOwn)\((["']?)(.*?)\4\)/g, (_, k, n, c, q, t) => { filters.push(k ? [k, +n] : [c, t]); return ""; }).trim() || "*";
+    let got; try { got = [...el.querySelectorAll(part)]; } catch (_) { continue; }
+    for (const [k, v] of filters) got = k === "gt" ? got.slice(v + 1) : k === "lt" ? got.slice(0, Math.max(0, v)) : k === "eq" ? (got[v < 0 ? got.length + v : v] ? [got[v < 0 ? got.length + v : v]] : [])
+      : k === "contains" ? got.filter(e => e.textContent.includes(v)) : got.filter(e => lgOwnText(e).join(" ").includes(v));
+    out.push(...got);
+  }
+  return [...new Set(out)];
+}
 const lgOwnText = e => [...e.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent.trim()).filter(Boolean);
 function lgStep(el, step){
   let sel = step, idx = null, excl = false, ranged = false, m;
@@ -3287,12 +3300,16 @@ function lgStep(el, step){
     let name = t[2] || "";
     if (!ranged && (m = name.match(/^(.*?)([.!])(-?\d+(?::-?\d+)*)$/))) { name = m[1]; excl = m[2] === "!"; idx = m[3]; }
     if (t[1] === "children" && /^-?\d+(:-?\d+)*$/.test(name)) { idx = name; name = ""; }
-    found = t[1] === "class" ? [...el.getElementsByClassName(name)]
+    found = t[1] === "class" ? [...el.getElementsByClassName(name.replace(/\./g, " "))]
       : t[1] === "id" ? lgQuery(el, `[id="${name.replace(/"/g, '\\"')}"]`)
       : t[1] === "tag" ? [...el.getElementsByTagName(name)]
       : t[1] === "text" ? lgQuery(el, "*").filter(e => lgOwnText(e).join(" ").includes(name))
       : [...el.children];
-  } else found = lgQuery(el, sel);
+  } else {
+    /* any selector may end in an index too: td.1, a.-1, li!0 (a class name cannot start with a digit) */
+    if (!ranged && (m = sel.match(/^(.*?[^.!])([.!])(-?\d+(?::-?\d+)*)$/))) { sel = m[1]; excl = m[2] === "!"; idx = m[3]; }
+    found = lgQuery(el, sel);
+  }
   return idx == null ? found : lgPickIdx(found, idx, excl, ranged);
 }
 function lgAttr(els, a){
