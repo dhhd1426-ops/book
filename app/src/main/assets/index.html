@@ -51,11 +51,7 @@ body{background:var(--paper);color:var(--ink);font-family:var(--f-display);
   -webkit-tap-highlight-color:transparent}
 .app{position:relative;width:100%;max-width:430px;height:100%;display:flex;flex-direction:column;
   user-select:none;-webkit-user-select:none}
-@media (min-width:600px){
-  body{align-items:center;background:var(--paper-deep)}
-  .app{height:min(880px,calc(100% - 48px));border-radius:36px;background:var(--paper);
-    box-shadow:0 0 0 1px var(--edge),0 40px 80px -30px var(--shadow);overflow:hidden}
-}
+
 
 /* ---------- header ---------- */
 .mast{padding-top:22px;display:flex;flex-direction:column;gap:6px}
@@ -77,7 +73,7 @@ h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
 .count b{font-weight:500;color:var(--ink)}
 
 /* ---------- stage ---------- */
-.stage{position:relative;flex:1;min-height:300px;margin:0 calc(-1 * max(24px,env(safe-area-inset-left,0px))) 0;
+.stage{position:relative;flex:1;min-height:300px;margin:0 calc(-1 * var(--gut)) 0;
   perspective:1700px;perspective-origin:50% 35%;cursor:grab;touch-action:pan-y;outline:none;overflow:hidden}
 .stage.drag{cursor:grabbing}
 .spot{position:absolute;left:52%;top:50%;width:105%;aspect-ratio:1.25;max-width:none;transform:translate(-50%,-50%);
@@ -150,7 +146,7 @@ h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
 .hint.gone{opacity:0}
 
 /* ---------- open-book layer ---------- */
-.app{overflow:hidden}
+.app{overflow:hidden;overflow:clip}
 .stage{overflow:visible}
 .app.is-open .stage{z-index:20}
 .veil{position:absolute;inset:0;z-index:15;background:color-mix(in oklab,var(--paper) 78%,transparent);
@@ -202,7 +198,7 @@ h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
   font-size:11px;line-height:1.05;display:grid;place-items:center;text-align:center;letter-spacing:0;opacity:.85;transform:rotate(-4deg)}
 .tp .foot{margin-top:10px;font-family:var(--f-mono);font-size:8.5px;letter-spacing:.18em;color:var(--ink-2);display:flex;justify-content:space-between}
 
-.dA{position:absolute;z-index:30;left:max(24px,env(safe-area-inset-left,0px));right:max(24px,env(safe-area-inset-right,0px));display:grid;gap:16px}
+.dA{position:absolute;z-index:30;display:grid;gap:16px}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--ink-3);border-bottom:1px solid var(--ink-3)}
 .stats > div{padding:10px 0 9px;display:grid;gap:3px}
 .stats > div + div{padding-left:14px;border-left:1px solid var(--ink-3)}
@@ -220,7 +216,7 @@ h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
 .reveal{opacity:0}
 
 /* B: bottom sheet */
-.sheet{position:absolute;z-index:30;left:0;right:0;bottom:0;background:var(--sheet);border-radius:26px 26px 0 0;
+.sheet{position:absolute;z-index:30;left:var(--rail,0px);right:0;bottom:0;margin:0 auto;max-width:620px;background:var(--sheet);border-radius:26px 26px 0 0;
   box-shadow:0 -1px 0 var(--edge),0 -30px 60px -30px var(--shadow);
   padding:10px max(24px,env(safe-area-inset-right,0px)) calc(22px + env(safe-area-inset-bottom,0px)) max(24px,env(safe-area-inset-left,0px));
   display:grid;gap:14px;transform:translateY(105%);touch-action:none}
@@ -234,8 +230,8 @@ h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
 
 /* ---------- views ---------- */
 .views{position:relative;flex:1;min-height:0}
-.view{position:absolute;inset:0;display:flex;flex-direction:column;
-  padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px));
+.view{--gut:max(24px,env(safe-area-inset-left,0px));position:absolute;inset:0;display:flex;flex-direction:column;
+  padding-left:var(--gut);padding-right:max(var(--gut),env(safe-area-inset-right,0px));
   visibility:hidden;pointer-events:none}
 .view.is-on{visibility:visible;pointer-events:auto}
 .view.scroll{overflow-y:auto;overscroll-behavior:contain;padding-bottom:28px;scrollbar-width:none}
@@ -274,7 +270,7 @@ h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
 .lib-tabs button[aria-selected="true"]{color:var(--ink)}
 .lib-tabs button[aria-selected="true"]::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--ink)}
 .lib-body{display:flex;flex-direction:column;gap:18px;margin-top:16px}
-.groups{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 calc(-1 * max(24px,env(safe-area-inset-left,0px)));padding:0 max(24px,env(safe-area-inset-left,0px))}
+.groups{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 calc(-1 * var(--gut));padding:0 var(--gut)}
 .groups::-webkit-scrollbar{display:none}
 .groups .pill{flex-shrink:0;height:32px;border-radius:8px;font-size:12.5px}
 .import{display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px dashed var(--ink-3);border-radius:12px;cursor:pointer;transition:background .3s}
@@ -332,9 +328,38 @@ h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
 .nrow[aria-checked="true"] .switch{background:var(--ink)}
 .nrow[aria-checked="true"] .switch::after{transform:translateX(18px)}
 
-.toast{position:absolute;left:50%;bottom:calc(78px + env(safe-area-inset-bottom,0px));z-index:50;transform:translate(-50%,10px);max-width:calc(100% - 48px);
+.toast{position:absolute;left:calc(50% + var(--rail,0px) / 2);bottom:calc(78px + env(safe-area-inset-bottom,0px));z-index:50;transform:translate(-50%,10px);max-width:calc(100% - 48px);
   padding:11px 18px;border-radius:999px;background:var(--ink);color:var(--paper);font-size:13px;letter-spacing:.1em;opacity:0;pointer-events:none;transition:opacity .3s,transform .4s cubic-bezier(.2,.9,.2,1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .toast.on{opacity:1;transform:translate(-50%,0)}
+
+/* ---------- tablet (≥ 600px wide): side rail, wider gutters, multi-column pages ---------- */
+@media (min-width:600px){
+  .app{max-width:none;flex-direction:row;--rail:96px}
+  .tabs{order:-1;flex:0 0 var(--rail);height:auto;flex-direction:column;justify-content:center;gap:14px;
+    border-top:0;border-right:1px solid var(--edge);padding:24px 0 calc(24px + env(safe-area-inset-bottom,0px)) env(safe-area-inset-left,0px)}
+  .tab{width:72px;height:64px;font-size:11px;border-radius:16px}
+  .tab[aria-current="page"]{background:color-mix(in oklab,var(--ink) 6%,transparent)}
+  .views{flex:1;min-width:0}
+  .view{--gut:clamp(36px,5vw,72px)}
+  .mast{padding-top:34px}
+  .word{font-size:36px}
+  .title{font-size:26px}
+  .meta{font-size:14px}
+  .info{min-height:128px}
+  .note-list{display:block;columns:2 300px;column-gap:32px}
+  .ngroup{break-inside:avoid;margin-bottom:30px}
+  .lib-body{margin-top:22px}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:26px 22px}
+  .me-body{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:28px 40px;align-items:start}
+  .me-body .week{grid-row:span 2}
+  .bars{height:150px}
+  .toast{bottom:calc(32px + env(safe-area-inset-bottom,0px))}
+  .sheet{border-radius:26px 26px 0 0;bottom:0}
+  .close{right:max(24px,env(safe-area-inset-right,0px));top:calc(22px + env(safe-area-inset-top,0px))}
+}
+@media (min-width:1100px){
+  .note-list{columns:3 280px}
+}
 </style>
 
 <main class="app">
@@ -578,7 +603,7 @@ const els = BOOKS.map(b => {
 });
 function sizeVars(){
   const w = stage.clientWidth, h = stage.clientHeight;
-  const k = Math.max(.72, Math.min(1.12, Math.min(w / 400, h / 330)));
+  const k = Math.max(.72, Math.min(innerWidth >= 600 ? 1.8 : 1.12, Math.min(w / 400, h / 330)));
   T = 26 * k; H = 196 * k; D = 142 * k;
   stage.style.setProperty("--t", T + "px"); stage.style.setProperty("--h", H + "px"); stage.style.setProperty("--d", D + "px");
 }
@@ -609,7 +634,10 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const lerp = (a, b, t) => a + (b - a) * t;
 
 /* ---------- pulling a book out ---------- */
-const app = document.querySelector(".app"), sceneEl = document.getElementById("scene");
+const app = document.querySelector(".app");
+/* never let focus or the flying book scroll the shell sideways */
+app.addEventListener("scroll", () => { app.scrollLeft = 0; app.scrollTop = 0; });
+const sceneEl = document.getElementById("scene");
 const veil = document.getElementById("veil"), spotEl = stage.querySelector(".spot"), floorEl = stage.querySelector(".floor");
 let sel = -1, pull = 0, pullV = 0, pullT = 0;
 let goal = [0, 0, 40], goalS = 1.2;            // where the book ends up, in view space, and its scale
@@ -812,13 +840,13 @@ function openBook(i){
   clearTimeout(autoTimer); clearTimeout(idleTimer); hint.classList.add("gone");
   go(i); sel = i; pullT = 1; pullV = 0; clock = 0; flatOn = false;
   app.classList.add("is-open");
-  const ar = app.getBoundingClientRect(), b = BOOKS[i];
+  const ar = document.getElementById("views").getBoundingClientRect(), b = BOOKS[i];
   if (mode === "A") {
-    const w = Math.min((ar.width - 52) / 2, 176);
+    const w = Math.min((ar.width - 52) / 2, innerWidth >= 600 ? Math.min(300, ar.height * .3) : 176);
     aimAt(ar.left + ar.width / 2, ar.top + 74 + (H * w / D) / 2, w);
   } else {
     panelEl = buildSheet(b); app.appendChild(panelEl);
-    const sh = panelEl.offsetHeight, w = Math.min(ar.width * .44, 176), ch = H * w / D;
+    const sh = panelEl.offsetHeight, w = Math.min(ar.width * .44, innerWidth >= 600 ? Math.min(240, (ar.height - sh) * .62) : 176), ch = H * w / D;
     aimAt(ar.left + ar.width / 2 + 6, ar.top + Math.max(70 + ch / 2, (ar.height - sh) / 2 + 6), w);
     panelEl.animate([{ transform: "translateY(105%)" }, { transform: "translateY(0)" }],
       { duration: ms(760) || 1, delay: ms(260), easing: EASE_OUT, fill: "forwards" });
@@ -868,7 +896,7 @@ function showFlat(){
   flatEl.querySelectorAll(".gutter").forEach(g => g.animate([{ opacity: 0 }, { opacity: 1 }], { ...opt, delay: D_OPEN * .6, duration: ms(500) || 1 }));
 
   panelEl = document.createElement("div"); panelEl.className = "dA";
-  panelEl.style.top = (cr.bottom - ar.top + 26) + "px";
+  Object.assign(panelEl.style, { top: (cr.bottom - ar.top + 26) + "px", left: (cr.left - ar.left - w / 2) + "px", width: (2 * w) + "px" });
   panelEl.innerHTML = statsHTML(b) + `<p class="syn">${b.syn}</p>` + actsHTML(b);
   app.appendChild(panelEl);
   stagger([...panelEl.children], 640);

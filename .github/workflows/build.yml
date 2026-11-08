@@ -1,8 +1,8 @@
 name: Build APK
 
+# Builds only when started by hand (Actions → Build APK → Run workflow).
+# Pushing code never packages the app.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:

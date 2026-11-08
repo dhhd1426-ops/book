@@ -1,6 +1,6 @@
 # 书架 · Book
 
-一个本地阅读器的可点击原型：立体书架、笔记、书库、我的四个页面，浅色与深色主题，「优雅 / 快速」两档动画速率。
+一个本地阅读器的可点击原型：立体书架、笔记、书库、我的四个页面，浅色与深色主题，「优雅 / 快速」两档动画速率。适配手机（竖屏）和平板（横竖屏，侧边导航）。
 
 ## 下载
 
@@ -12,7 +12,7 @@
 
 - `app/src/main/assets/index.html`：整个原型界面（HTML / CSS / JS，一个文件）
 - `app/src/main/java/app/book/shelf/MainActivity.java`：安卓外壳，用 WebView 加载上面的页面，处理返回键和文件选择
-- `.github/workflows/build.yml`：每次推送到 `main` 自动编译 APK 并发布到 Releases
+- `.github/workflows/build.yml`：编译 APK 并发布到 Releases，只在手动运行时触发（Actions → Build APK → Run workflow）
 
 ## 说明
 
