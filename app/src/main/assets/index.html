@@ -1928,8 +1928,9 @@ document.getElementById("selbar").addEventListener("click", e => {
 /* rows: toggle, check, menu */
 /* a book-source (小说 / 漫画 …) imported by an older version, which did not keep its search rule */
 const noRule = s => !s.search && !["OPDS", "WebDAV", "网页"].includes(s.type);
-const whyFail = e => e?.name === "AbortError" ? "超时" : /^HTTP \d/.test(e?.message || "") ? e.message
-  : /^java\./.test(e?.message || "") ? `规则用到了 ${e.message}，暂不支持` : e instanceof TypeError ? "连不上" : "规则出错";
+const whyFail = e => e?.name === "AbortError" ? "超时" : e?.net ? e.message : /^HTTP \d/.test(e?.message || "") ? e.message
+  : /^java\./.test(e?.message || "") ? `规则用到了 ${e.message}，这里还不支持` : e instanceof TypeError && /fetch|network|load failed/i.test(e.message) ? "连不上（网络请求被拦下或服务器没响应）"
+  : `规则出错：${String(e?.message || e).slice(0, 80)}`;
 async function testSource(s){
   if (noRule(s)) { toast(`「${s.name}」没有保存搜索规则：在右上角加号里重新导入这个书源文件`); return; }
   if (s.search || s.type === "OPDS") {   // a real search with the source's own check word
@@ -3415,7 +3416,19 @@ async function lgGet(src, raw, base, env = {}, signal){
   if (req.webView && window.ShelfNative?.render) return lgRender(req, signal);
   return lgFetch(req, signal);
 }
+/* in the app, requests go through the Android shell like Legado's own (cookies, User-Agent, Referer, no CORS) */
+let lgReqSeq = 0; const lgReqWait = new Map();
+window.__shelfFetched = (id, r) => { const f = lgReqWait.get(id); if (f) { lgReqWait.delete(id); f(r || { err: "没有响应" }); } };
+function lgNativeFetch(req, signal){
+  return new Promise((ok, fail) => {
+    const id = "q" + (++lgReqSeq);
+    lgReqWait.set(id, r => r.err ? fail(Object.assign(new Error(r.err), { net: !/^HTTP \d/.test(r.err) })) : ok({ text: String(r.text ?? ""), url: r.url || req.url }));
+    signal?.addEventListener("abort", () => { if (lgReqWait.delete(id)) fail(Object.assign(new Error("超时"), { name: "AbortError" })); });
+    window.ShelfNative.request(id, JSON.stringify(req));
+  });
+}
 async function lgFetch(req, signal){
+  if (window.ShelfNative?.request) return lgNativeFetch(req, signal);
   const headers = lgSafeHeaders(req);
   if (req.body != null && !Object.keys(headers).some(k => /^content-type$/i.test(k)))
     headers["Content-Type"] = /^\s*[{[]/.test(req.body) ? "application/json" : "application/x-www-form-urlencoded";

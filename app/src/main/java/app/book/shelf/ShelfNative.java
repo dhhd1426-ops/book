@@ -51,9 +51,46 @@ final class ShelfNative {
 
     // ---------- ajax ----------
 
+    /** Blocking request, for java.ajax() inside rule scripts. */
     @JavascriptInterface
     public String ajax(String reqJson) {
         try {
+            return send(reqJson)[0];
+        } catch (Exception e) {
+            return ERR + why(e);
+        }
+    }
+
+    /**
+     * The same request off the UI thread, for every book-source page (search, detail, toc, chapter).
+     * Answers window.__shelfFetched(id, {text, url}) or (id, {err}).
+     */
+    @JavascriptInterface
+    public void request(final String id, final String reqJson) {
+        new Thread(() -> {
+            String reply;
+            try {
+                String[] r = send(reqJson);
+                reply = "{\"text\":" + JSONObject.quote(r[0]) + ",\"url\":" + JSONObject.quote(r[1]) + "}";
+            } catch (Exception e) {
+                reply = "{\"err\":" + JSONObject.quote(why(e)) + "}";
+            }
+            final String js = "window.__shelfFetched && window.__shelfFetched(" + JSONObject.quote(id) + "," + reply + ")";
+            ui.post(() -> main.evaluateJavascript(js, null));
+        }, "shelf-request").start();
+    }
+
+    private static String why(Exception e) {
+        if (e instanceof java.net.UnknownHostException) return "找不到服务器（" + e.getMessage() + "）";
+        if (e instanceof java.net.SocketTimeoutException) return "超时";
+        if (e instanceof javax.net.ssl.SSLException) return "安全连接失败：" + e.getMessage();
+        if (e instanceof java.net.ConnectException) return "连不上服务器";
+        return e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+    }
+
+    /** returns {body, final url}; throws with "HTTP nnn" for error statuses */
+    private String[] send(String reqJson) throws Exception {
+        {
             JSONObject req = new JSONObject(reqJson);
             String url = req.optString("url");
             String method = req.optString("method", "GET");
@@ -101,13 +138,25 @@ final class ShelfNative {
                 byte[] bytes = in == null ? new byte[0] : readAll(in);
                 String cs = charset.isEmpty() ? charsetOf(c.getContentType()) : charset;
                 c.disconnect();
-                if (code >= 400) return ERR + "HTTP " + code;
-                return new String(bytes, cs.isEmpty() ? StandardCharsets.UTF_8 : Charset.forName(cs));
+                if (code >= 400) throw new java.io.IOException("HTTP " + code);
+                if (cs.isEmpty()) cs = metaCharset(bytes);
+                Charset dec;
+                try { dec = cs.isEmpty() ? StandardCharsets.UTF_8 : Charset.forName(cs); } catch (Exception bad) { dec = StandardCharsets.UTF_8; }
+                return new String[]{new String(bytes, dec), url};
             }
-            return ERR + "跳转次数太多";
-        } catch (Exception e) {
-            return ERR + (e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage());
+            throw new java.io.IOException("跳转次数太多");
         }
+    }
+
+    /** <meta charset="gbk"> in the first few KB of an HTML page */
+    private static String metaCharset(byte[] bytes) {
+        String head = new String(bytes, 0, Math.min(bytes.length, 4096), StandardCharsets.ISO_8859_1).toLowerCase();
+        int i = head.indexOf("charset=");
+        if (i < 0 || head.indexOf("<meta") < 0) return "";
+        String cs = head.substring(i + 8).replace("\"", "").replace("'", "").trim();
+        int end = 0;
+        while (end < cs.length() && (Character.isLetterOrDigit(cs.charAt(end)) || cs.charAt(end) == '-' || cs.charAt(end) == '_')) end++;
+        return cs.substring(0, end);
     }
 
     private static void keepCookies(String url, Map<String, List<String>> fields) {
