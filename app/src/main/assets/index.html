@@ -2064,12 +2064,25 @@ function parseSourceFile(text){
   const list = (Array.isArray(data) ? data : [data]).filter(o => o && typeof o === "object").map(o => ({
     name: o.bookSourceName || o.sourceName || o.name || o.title,
     url: o.bookSourceUrl || o.sourceUrl || o.url,
-    type: o.bookSourceType in LEGADO_TYPE ? LEGADO_TYPE[o.bookSourceType] : (o.ruleSearch || o.searchUrl ? "小说" : undefined),
+    type: o.bookSourceType in LEGADO_TYPE ? LEGADO_TYPE[o.bookSourceType] : (o.ruleSearch || o.searchUrl || o.ruleSearchUrl ? "小说" : undefined),
     group: String(o.bookSourceGroup || o.group || "").replace(/[,，]+$/, ""),
     on: o.enabled !== false,
-    note: o.bookSourceComment || ""
+    note: o.bookSourceComment || "",
+    search: searchRuleOf(o)
   })).filter(o => o.url);
   return list.length ? { list } : { why: "empty", head };
+}
+/* keep what the search needs: Legado 3 (searchUrl + ruleSearch) or the older 阅读 2 fields (ruleSearchUrl + ruleSearchList …) */
+function searchRuleOf(o){
+  let rule = o.ruleSearch;
+  if (typeof rule === "string") { try { rule = lenientJSON(rule); } catch (_) { rule = null; } }
+  if (!rule || typeof rule !== "object") rule = o.ruleSearchList ? { bookList: o.ruleSearchList, name: o.ruleSearchName, author: o.ruleSearchAuthor,
+    intro: o.ruleSearchIntroduce, kind: o.ruleSearchKind, lastChapter: o.ruleSearchLastChapter, coverUrl: o.ruleSearchCoverUrl, bookUrl: o.ruleSearchNoteUrl } : null;
+  const url = o.searchUrl || o.ruleSearchUrl;
+  if (!url || !rule || !rule.bookList || !rule.name) return undefined;
+  const keep = {};
+  ["bookList", "name", "author", "intro", "kind", "lastChapter", "wordCount", "coverUrl", "bookUrl"].forEach(k => { if (rule[k]) keep[k] = String(rule[k]); });
+  return { url: String(url), rule: keep, header: o.header ? String(o.header) : "" };
 }
 /* GitHub page links point at an HTML page; the file itself lives on raw.githubusercontent.com,
    and jsDelivr mirrors the same file where GitHub is hard to reach */
@@ -2117,10 +2130,17 @@ async function importLinks(lines, btn, err){
 }
 function addSources(list, failedFiles = 0){
   const t = Date.now(), fresh = [];
+  let updated = 0;
   list.forEach((x, i) => {
-    if (!x.url || sources.some(s => s.url === x.url) || fresh.some(f => f.url === x.url)) return;
+    if (!x.url) return;
+    const old = sources.find(s => s.url === x.url) || fresh.find(f => f.url === x.url);
+    if (old) {   // already listed: refresh its search rule (older versions dropped it on import)
+      if (x.search && JSON.stringify(old.search) !== JSON.stringify(x.search)) { old.search = x.search; if (x.type) old.type = x.type; updated++; }
+      return;
+    }
     fresh.push({ id: "n" + t + i, name: x.name || hostOf(x.url), url: x.url, type: x.type || guessType(x.url), group: x.group || "",
-      on: x.on !== false, st: x.type ? "idle" : "ok", ms: x.type ? 0 : 120 + Math.round(Math.random() * 400), added: t + i, note: x.note || "" });
+      on: x.on !== false, st: x.type ? "idle" : "ok", ms: x.type ? 0 : 120 + Math.round(Math.random() * 400), added: t + i, note: x.note || "",
+      ...(x.search ? { search: x.search } : {}) });
   });
   sources = sources.concat(fresh); saveSources();
   srcFilter = "all"; srcSort = "recent"; srcQ = ""; const si = document.getElementById("srcSearch"); if (si) si.value = "";
@@ -2130,9 +2150,9 @@ function addSources(list, failedFiles = 0){
     r.animate([{ backgroundColor: "color-mix(in oklab, var(--accent) 18%, transparent)" }, { backgroundColor: "transparent" }], { duration: 1600, easing: "ease-out" }); });
   const byType = {}; fresh.forEach(f => byType[f.type] = (byType[f.type] || 0) + 1);
   const kinds = Object.entries(byType).map(([k, n]) => `${k} ${n}`).join(" · ");
-  const skipped = list.length - fresh.length;
-  toast(fresh.length ? `已导入 ${fresh.length} 个书源${kinds ? "（" + kinds + "）" : ""}${skipped ? `，跳过 ${skipped} 个重复` : ""}${failedFiles ? `，${failedFiles} 个链接下载失败` : ""}`
-    : "这些书源已经在列表里了");
+  const skipped = list.length - fresh.length - updated;
+  toast(fresh.length ? `已导入 ${fresh.length} 个书源${kinds ? "（" + kinds + "）" : ""}${updated ? `，更新 ${updated} 个的搜索规则` : ""}${skipped ? `，跳过 ${skipped} 个重复` : ""}${failedFiles ? `，${failedFiles} 个链接下载失败` : ""}`
+    : updated ? `已更新 ${updated} 个书源的搜索规则` : "这些书源已经在列表里了");
 }
 document.getElementById("srcFile").addEventListener("change", e => {
   const f = e.target.files[0]; e.target.value = ""; if (!f) return;
@@ -2911,7 +2931,7 @@ function sxRender(){
       <span>${st.tab === "all" ? "已启用的书库里都没有这本书。可能还在版权期内、没有开放，或者书名有别的写法。" : "换到「综合」看看全部结果。"}</span>
       ${st.tab === "all" ? `<button class="btn primary" type="button" data-ask="${esc(q)}">${sxAsk.includes(q) ? "已在求书清单" : "求书：有书库收录时提醒我"}</button>` : ""}</div>
       ${similar.length ? `<div class="sx-h"><b>相似的书</b></div><div class="sx-list">${similar.map(row).join("")}</div>` : ""}` : ""}
-    ${!searching ? `<p class="gsx-note">${st.live ? `联网搜索了：${esc(st.live)}。` : ""}${st.fail.length ? `没有响应：${st.fail.map(esc).join("、")}。` : ""}书架和公版书目里的「演示数据」只用于预览。${st.skipped ? `另有 ${st.skipped} 个书源不支持按书名搜索（WebDAV、网页规则等），没有参与。` : ""}</p>` : ""}`;
+    ${!searching ? `<p class="gsx-note">${st.live ? `联网搜索了：${esc(st.live)}。` : ""}${st.fail.length ? `没有响应：${st.fail.map(esc).join("、")}。` : ""}书架和公版书目里的「演示数据」只用于预览。${st.skipped ? `另有 ${st.skipped} 个书源没有搜索规则，没有参与${st.stale ? `（其中 ${st.stale} 个是旧版本导入的，当时没保存规则，在书源管理里重新导入一次即可）` : "（WebDAV、普通网址等）"}。` : ""}</p>` : ""}`;
 }
 
 /* ---------- real search: OPDS catalogues via OpenSearch ---------- */
@@ -2959,20 +2979,304 @@ async function opdsSearch(src, q, signal){
       cover: img ? new URL(img.getAttribute("href"), url).href : null, remote: src.name };
   }).filter(x => x.t && !/^(next|previous|下一页|上一页)$/i.test(x.t));
 }
+/* ---------- real search: Legado (阅读) book sources — searchUrl + ruleSearch ----------
+   Covers what search rules commonly use: GET / POST with charset (GBK keys), headers, {{key}} / {{page}} and JS in {{ }},
+   rules in Default (JSoup) syntax, @css:, XPath, JSONPath, || && fallbacks, ##regex##replace, <js>…</js> and @js:.
+   Not covered: java.ajax and other calls that need a synchronous network request inside JS. */
+let gbkTable = null;
+function gbkEncode(s){
+  if (!gbkTable) {   // build char → %XX%XX once from the browser's own GBK decoder
+    gbkTable = new Map();
+    try {
+      const dec = new TextDecoder("gbk"), b = new Uint8Array(2);
+      for (let i = 0x81; i <= 0xfe; i++) for (let j = 0x40; j <= 0xfe; j++) {
+        if (j === 0x7f) continue; b[0] = i; b[1] = j;
+        const c = dec.decode(b);
+        if (c.length === 1 && c !== "�" && !gbkTable.has(c)) gbkTable.set(c, "%" + i.toString(16).toUpperCase() + "%" + j.toString(16).toUpperCase());
+      }
+    } catch (_) {}
+  }
+  return [...s].map(c => c.charCodeAt(0) < 128 ? encodeURIComponent(c) : gbkTable.get(c) || encodeURIComponent(c)).join("");
+}
+const lgVars = new Map();
+const lgJava = {
+  encodeURI: (s, cs) => /gb/i.test(cs || "") ? gbkEncode(String(s)) : encodeURIComponent(String(s)),
+  base64Encode: s => { try { return btoa(unescape(encodeURIComponent(String(s)))); } catch (_) { return ""; } },
+  base64Decode: s => { try { return decodeURIComponent(escape(atob(String(s)))); } catch (_) { return ""; } },
+  put: (k, v) => (lgVars.set(String(k), v), v), get: k => lgVars.get(String(k)) ?? "",
+  log: x => x, toast: () => {}, longToast: () => {}, timeFormat: t => new Date(+t).toLocaleString(),
+  ajax: () => { throw new Error("java.ajax"); }, connect: () => { throw new Error("java.connect"); }
+};
+const lgSource = s => ({ key: s.url, bookSourceUrl: s.url, bookSourceName: s.name, getKey: () => s.url, getVariable: () => "", get: k => lgVars.get(k) ?? "", put: (k, v) => lgJava.put(k, v) });
+function lgJs(code, env){
+  return new Function("java", "result", "baseUrl", "key", "page", "source", "book", "cookie", "cache", "src",
+    "return eval(" + JSON.stringify(code) + ")")(lgJava, env.result, env.baseUrl || "", env.key ?? "", env.page ?? 1, env.source || {}, {}, {}, {}, env.result);
+}
+/* split on a separator that is not inside brackets, braces or quotes */
+function lgSplit(rule, sep){
+  const out = []; let depth = 0, qt = "", last = 0;
+  for (let i = 0; i < rule.length; i++) {
+    const c = rule[i];
+    if (qt) { if (c === "\\") i++; else if (c === qt) qt = ""; continue; }
+    if (c === "'" || c === '"') { qt = c; continue; }
+    if (c === "[" || c === "(" || c === "{") depth++;
+    else if (c === "]" || c === ")" || c === "}") depth = Math.max(0, depth - 1);
+    else if (!depth && rule.startsWith(sep, i)) { out.push(rule.slice(last, i)); i += sep.length - 1; last = i + 1; }
+  }
+  out.push(rule.slice(last)); return out;
+}
+/* a rule is a chain of selector parts and JS parts: sel<js>…</js>sel@js:… */
+function lgParts(rule){
+  const parts = [], re = /<js>([\s\S]*?)<\/js>|@js:([\s\S]*)$/i;
+  let rest = rule, m;
+  while ((m = re.exec(rest))) {
+    const pre = rest.slice(0, m.index).trim(); if (pre) parts.push({ rule: pre });
+    parts.push({ js: m[1] ?? m[2] });
+    rest = rest.slice(m.index + m[0].length);
+  }
+  if (rest.trim()) parts.push({ rule: rest.trim() });
+  return parts;
+}
+/* JSONPath subset: $.a.b, $['a'], [0], [-1], [*], [0,2], [1:3], $..key, bare keys */
+function jsonPath(obj, path){
+  path = path.trim();
+  if (!path.startsWith("$")) path = "$." + path;
+  const kids = v => v && typeof v === "object" ? (Array.isArray(v) ? v : Object.values(v)) : [];
+  const deep = v => [v, ...kids(v).flatMap(deep)];
+  let cur = [obj], i = 1;
+  while (i < path.length) {
+    let desc = false;
+    if (path.startsWith("..", i)) { desc = true; i += 2; } else if (path[i] === ".") i++;
+    let sel;
+    if (path[i] === "[") { const j = path.indexOf("]", i); sel = path.slice(i + 1, j < 0 ? path.length : j).trim(); i = j < 0 ? path.length : j + 1; }
+    else { const m = /^[^.[]+/.exec(path.slice(i)); sel = m ? m[0].trim() : "*"; i += m ? m[0].length : 1; if (sel !== "*") sel = "'" + sel + "'"; }
+    if (desc) cur = cur.flatMap(deep);
+    cur = cur.flatMap(v => {
+      if (v == null || typeof v !== "object") return [];
+      if (sel === "*" || sel.startsWith("?")) return kids(v);
+      if (/^(['"]).*\1$/.test(sel)) return sel.slice(1, -1).split(/['"]\s*,\s*['"]/).filter(k => k in v).map(k => v[k]);
+      if (!Array.isArray(v)) return [];
+      if (/^-?\d+(\s*,\s*-?\d+)*$/.test(sel)) return sel.split(",").map(n => v[+n < 0 ? v.length + +n : +n]).filter(x => x !== undefined);
+      const r = sel.match(/^(-?\d*):(-?\d*)$/);
+      return r ? v.slice(r[1] === "" ? 0 : +r[1], r[2] === "" ? undefined : +r[2]) : [];
+    });
+  }
+  return cur.filter(v => v !== undefined && v !== null);
+}
+/* turn whatever a step produced into something the next rule can read */
+function lgCtx(cur){
+  if (cur instanceof Node || cur == null || typeof cur !== "string") return cur;
+  const t = cur.trim();
+  if (/^[[{]/.test(t)) { try { return JSON.parse(t); } catch (_) {} }
+  return new DOMParser().parseFromString(cur, "text/html");
+}
+/* index part of a Default-syntax step: old ".0:2" / "!0" or new "[0,2]" "[1:3]" "[!0]" */
+function lgPickIdx(list, spec, excl, ranged){
+  const n = list.length, at = k => (k < 0 ? n + k : k), keep = new Set();
+  spec.split(ranged ? "," : ":").map(x => x.trim()).filter(Boolean).forEach(p => {
+    const r = ranged && p.match(/^(-?\d*):(-?\d*)(?::(\d+))?$/);
+    if (r) { const a = r[1] === "" ? 0 : at(+r[1]), b = r[2] === "" ? n - 1 : at(+r[2]), st = +r[3] || 1;
+      for (let k = Math.min(a, b); k <= Math.max(a, b); k += st) keep.add(k); }
+    else keep.add(at(+p));
+  });
+  return list.filter((_, k) => excl ? !keep.has(k) : keep.has(k));
+}
+function lgQuery(el, sel){ try { return [...el.querySelectorAll(sel)]; } catch (_) { return []; } }
+const lgOwnText = e => [...e.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent.trim()).filter(Boolean);
+function lgStep(el, step){
+  let sel = step, idx = null, excl = false, ranged = false, m;
+  if ((m = step.match(/^(.*?)\[(!?)([-\d:,\s]+)\]$/)) && m[1]) { sel = m[1]; excl = !!m[2]; idx = m[3]; ranged = true; }
+  let found;
+  const t = sel.match(/^(class|id|tag|text|children)(?:\.(.*))?$/);
+  if (t) {
+    let name = t[2] || "";
+    if (!ranged && (m = name.match(/^(.*?)([.!])(-?\d+(?::-?\d+)*)$/))) { name = m[1]; excl = m[2] === "!"; idx = m[3]; }
+    if (t[1] === "children" && /^-?\d+(:-?\d+)*$/.test(name)) { idx = name; name = ""; }
+    found = t[1] === "class" ? [...el.getElementsByClassName(name)]
+      : t[1] === "id" ? lgQuery(el, `[id="${name.replace(/"/g, '\\"')}"]`)
+      : t[1] === "tag" ? [...el.getElementsByTagName(name)]
+      : t[1] === "text" ? lgQuery(el, "*").filter(e => lgOwnText(e).join(" ").includes(name))
+      : [...el.children];
+  } else found = lgQuery(el, sel);
+  return idx == null ? found : lgPickIdx(found, idx, excl, ranged);
+}
+function lgAttr(els, a){
+  els = els.map(e => e.nodeType === 9 ? e.documentElement : e).filter(Boolean);
+  if (a === "text") return els.map(e => e.textContent.replace(/\s+/g, " ").trim()).filter(Boolean);
+  if (a === "ownText") return els.map(e => lgOwnText(e).join(" ")).filter(Boolean);
+  if (a === "textNodes") return els.map(e => lgOwnText(e).join("\n")).filter(Boolean);
+  if (a === "html" || a === "all") return els.map(e => { const c = e.cloneNode(true); if (a === "html") c.querySelectorAll("script,style").forEach(x => x.remove()); return a === "html" ? c.innerHTML : c.outerHTML; });
+  return els.map(e => e.getAttribute && e.getAttribute(a)).filter(v => v != null && v !== "");
+}
+/* one plain rule (no || && or JS) → nodes / values */
+function lgOne(cur, rule, asList){
+  rule = rule.trim(); cur = lgCtx(cur);
+  if (!rule || cur == null) return [];
+  const isNode = cur instanceof Node;
+  if (/^@json:/i.test(rule) || /^\$[.[]/.test(rule) || (!isNode && !/^@(css|xpath):/i.test(rule) && !rule.startsWith("/"))) {
+    if (isNode) return [];
+    const vals = jsonPath(cur, rule.replace(/^@json:/i, "")).flatMap(v => Array.isArray(v) ? v : [v]);
+    return asList ? vals : vals.filter(v => v !== "").map(v => typeof v === "object" ? JSON.stringify(v) : String(v));
+  }
+  if (!isNode) return [];
+  if (/^@xpath:/i.test(rule) || rule.startsWith("/")) {
+    let xp = rule.replace(/^@xpath:/i, ""); if (cur.nodeType === 1 && xp.startsWith("/")) xp = "." + xp;   // Legado's XPath is relative to the item
+    const out = [];
+    try { const r = (cur.ownerDocument || cur).evaluate(xp, cur, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null); for (let i = 0; i < r.snapshotLength; i++) out.push(r.snapshotItem(i)); } catch (_) {}
+    return asList ? out.filter(n => n.nodeType === 1) : out.map(n => n.nodeType === 1 ? n.textContent.replace(/\s+/g, " ").trim() : (n.nodeValue || "").trim()).filter(Boolean);
+  }
+  const root = cur.nodeType === 9 ? cur.documentElement : cur;
+  if (/^@css:/i.test(rule)) {
+    let r = rule.slice(5), attr = "text";
+    if (!asList) { const i = r.lastIndexOf("@"); if (i > 0) { attr = r.slice(i + 1).trim(); r = r.slice(0, i); } }
+    const els = lgQuery(root, r);
+    return asList ? els : lgAttr(els, attr);
+  }
+  const steps = lgSplit(rule.replace(/^@@/, ""), "@").map(s => s.trim()).filter(Boolean);
+  const attr = asList ? null : steps.pop();
+  let els = [root];
+  for (const st of steps) els = els.flatMap(e => lgStep(e, st));
+  return asList ? els : lgAttr(els, attr);
+}
+function lgReplace(s, re, rep, once){
+  let rx; try { rx = new RegExp(re, once ? "" : "g"); } catch (_) { return s; }
+  if (!once) return s.replace(rx, rep);
+  const m = s.match(rx); return m ? m[0].replace(rx, rep) : "";
+}
+/* a rule read as text */
+function lgStrPart(cur, rule, env){
+  rule = rule.replace(/@put:\{[^}]*\}/gi, "").trim();
+  const [main, re, rep = "", ...more] = rule.split("##");
+  let out;
+  if (/\{\{[\s\S]*?\}\}/.test(main)) {   // template: https://x.com/book/{{$.id}}/
+    out = main.replace(/\{\{([\s\S]*?)\}\}/g, (_, e) => { e = e.trim();
+      if (/^(\$[.[]|@(css|xpath|json):|\/)/i.test(e) || /^(class|id|tag|text|children)\./.test(e)) return lgStrPart(cur, e, env);
+      try { const v = lgJs(e, { ...env, result: cur }); return v == null ? "" : String(v); } catch (_) { return ""; } });
+  } else if (/@get:\{/i.test(main)) out = main.replace(/@get:\{([^}]*)\}/gi, (_, k) => String(lgVars.get(k) ?? ""));
+  else if (/\{\$[.[]/.test(main) && !(lgCtx(cur) instanceof Node)) out = main.replace(/\{(\$[^}]+)\}/g, (_, p) => lgOne(cur, p, false).join(""));
+  else {
+    out = "";
+    for (const alt of lgSplit(main, "||")) {
+      const got = lgSplit(alt, "&&").flatMap(r => lgSplit(r, "%%")).map(r => lgOne(cur, r, false).join("\n")).filter(Boolean);
+      if (got.length) { out = got.join("\n"); break; }
+    }
+  }
+  return re ? lgReplace(out, re, rep, more.length > 0) : out;
+}
+function lgStr(ctx, rule, env){
+  let cur = ctx;
+  for (const p of lgParts(rule)) {
+    if (p.js != null) { try { cur = lgJs(p.js, { ...env, result: cur }); } catch (_) { return ""; } }
+    else cur = lgStrPart(cur, p.rule, env);
+  }
+  if (cur == null) return "";
+  if (Array.isArray(cur)) return cur.join("\n");
+  return cur instanceof Node ? cur.textContent : typeof cur === "object" ? JSON.stringify(cur) : String(cur);
+}
+function lgList(ctx, rule, env){
+  rule = rule.trim();
+  const rev = rule.startsWith("-"); rule = rule.replace(/^[-+]/, "");
+  let cur = ctx;
+  for (const p of lgParts(rule)) {
+    if (p.js != null) { cur = lgJs(p.js, { ...env, result: cur }); continue; }
+    let got = [];
+    for (const alt of lgSplit(p.rule, "||")) {
+      got = lgSplit(alt, "&&").flatMap(r => lgSplit(r, "%%")).flatMap(r => lgOne(cur, r, true));
+      if (got.length) break;
+    }
+    cur = got;
+  }
+  cur = lgCtx(cur);
+  let list = Array.isArray(cur) ? cur : cur == null ? [] : [cur];
+  if (list.length === 1 && Array.isArray(list[0])) list = list[0];
+  return rev ? list.reverse() : list;
+}
+/* searchUrl → { url, method, body, headers, charset } */
+function lgRequest(src, q){
+  const base = src.url.replace(/#.*$/, ""), env = { key: q, page: 1, baseUrl: base, source: lgSource(src) };
+  let raw = src.search.url.trim(), opts = {};
+  if (/^@js:/i.test(raw)) raw = String(lgJs(raw.slice(4), env));
+  else if (/^<js>[\s\S]*<\/js>$/i.test(raw)) raw = String(lgJs(raw.slice(4, -5), env));
+  /* options after the address: url,{"method":"POST","body":"…","charset":"gbk","headers":{…}} */
+  for (let i = raw.indexOf(","); i >= 0; i = raw.indexOf(",", i + 1)) {
+    const tail = raw.slice(i + 1).trim();
+    if (!tail.startsWith("{") || tail.startsWith("{{")) continue;
+    try { const o = lenientJSON(tail); if (o && typeof o === "object") { opts = o; raw = raw.slice(0, i).trim(); break; } } catch (_) {}
+  }
+  /* 阅读 2.x: url|char=gbk, url@body means POST, searchKey / searchPage */
+  let charset = opts.charset || "", method = String(opts.method || "GET").toUpperCase(), body = opts.body;
+  const legacy = raw.match(/\|char=([\w-]+)\s*$/i); if (legacy) { charset = charset || legacy[1]; raw = raw.slice(0, legacy.index); }
+  const at = raw.match(/^(https?:\/\/[^@]*?|\/[^@]*?)@(?!js:)([^@]*searchKey[^@]*)$/);
+  if (at && body == null) { raw = at[1]; body = at[2]; method = "POST"; }
+  const gb = /^gb/i.test(charset);
+  const enc = s => gb ? gbkEncode(s) : encodeURIComponent(s);
+  const fill = (s, json) => String(s)
+    .replace(/\{\{([\s\S]*?)\}\}/g, (_, e) => { e = e.trim();
+      if (e === "key") return json ? JSON.stringify(q).slice(1, -1) : enc(q);
+      if (e === "page") return "1";
+      try { const v = lgJs(e, env); return v == null ? "" : String(v); } catch (_) { return ""; } })
+    .replace(/searchKey/g, json ? q : enc(q)).replace(/searchPage([-+]1)?/g, (_, d) => String(1 + (+d || 0)));
+  let url = fill(raw).replace(/<([^<>,]*),[^<>]*>/g, "$1");
+  url = new URL(url, base).href;
+  if (body != null && typeof body === "object") body = fill(JSON.stringify(body), true);
+  else if (body != null) body = fill(body, /^\s*[{[]/.test(body));
+  let headers = {};
+  try {
+    let h = src.search.header || "";
+    if (/^@js:/i.test(h)) h = lgJs(h.slice(4), env); else if (/^<js>/i.test(h)) h = lgJs(h.replace(/^<js>|<\/js>$/gi, ""), env);
+    if (h) headers = typeof h === "object" ? h : lenientJSON(String(h));
+  } catch (_) {}
+  if (opts.headers && typeof opts.headers === "object") headers = { ...headers, ...opts.headers };
+  if (body != null && method === "GET") method = "POST";
+  return { url, method, body: body ?? undefined, headers, charset };
+}
+async function lgFetch(req, signal){
+  const headers = {};
+  for (const [k, v] of Object.entries(req.headers || {})) if (!/^(cookie|referer|host|connection|content-length|accept-encoding)$/i.test(k)) headers[k] = String(v);
+  if (req.body != null && !Object.keys(headers).some(k => /^content-type$/i.test(k)))
+    headers["Content-Type"] = /^\s*[{[]/.test(req.body) ? "application/json" : "application/x-www-form-urlencoded";
+  let r;
+  try { r = await fetch(req.url, { method: req.method, headers, body: req.body, signal }); }
+  catch (e) { if (e.name === "AbortError" || !Object.keys(headers).length) throw e;   // some servers refuse custom headers: try once without
+    r = await fetch(req.url, { method: req.method, body: req.body, signal }); }
+  if (!r.ok) throw new Error("HTTP " + r.status);
+  const buf = await r.arrayBuffer();
+  let cs = req.charset || ((r.headers.get("content-type") || "").match(/charset=["']?([\w-]+)/i) || [])[1];
+  if (!cs) cs = (new TextDecoder("latin1").decode(buf.slice(0, 4096)).match(/<meta[^>]+charset=["']?([\w-]+)/i) || [])[1];
+  let text; try { text = new TextDecoder(cs || "utf-8").decode(buf); } catch (_) { text = new TextDecoder().decode(buf); }
+  return { text, url: r.url || req.url };
+}
+async function legadoSearch(src, q, signal){
+  const s = src.search, req = lgRequest(src, q);
+  const res = await lgFetch(req, signal);
+  const env = { key: q, page: 1, baseUrl: res.url, source: lgSource(src) };
+  const items = lgList(lgCtx(res.text), s.rule.bookList, env);
+  const abs = v => { v = String(v || "").split(/,\s*\{/)[0].trim(); if (!v || /^(data:|javascript:)/i.test(v) && !/^data:image/i.test(v)) return null; try { return new URL(v, res.url).href; } catch (_) { return null; } };
+  const one = v => String(v || "").replace(/\s+/g, " ").trim();
+  return items.slice(0, 30).map(it => {
+    const g = k => { if (!s.rule[k]) return ""; try { return lgStr(it, s.rule[k], env); } catch (_) { return ""; } };
+    return { t: one(g("name")), a: one(g("author")).replace(/^(作\s*者)\s*[:：]\s*/, ""), cat: one(g("kind").split(/[\n,，]/)[0]) || src.group || "小说",
+      syn: one(g("intro")).slice(0, 120), cover: abs(g("coverUrl")), url: abs(g("bookUrl")) || res.url, last: one(g("lastChapter")), remote: src.name };
+  }).filter(b => b.t);
+}
 function runSources(q){
   const st = sxState, run = st.run, on = sources.filter(s => s.on);
-  const searchable = on.filter(s => s.type === "OPDS");
+  const searchable = on.filter(s => s.type === "OPDS" || s.search);
   st.total = searchable.length; st.skipped = on.length - searchable.length; st.done = 0; st.fail = []; st.live = "";
+  st.stale = on.filter(s => !s.search && s.type !== "OPDS" && s.type !== "WebDAV" && s.type !== "网页").length;
   const ok = [];
   sxRender();
-  searchable.forEach(s => {
-    const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 10000);
-    opdsSearch(s, q, ctl.signal).then(list => {
+  let next = 0;
+  const work = () => {   // a few at a time: an imported file can hold hundreds of sources
+    if (run !== sxState.run || next >= searchable.length) return;
+    const s = searchable[next++], ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 12000);
+    (s.search ? legadoSearch : opdsSearch)(s, q, ctl.signal).then(list => {
       if (run !== sxState.run) return;
-      st.src.push(...list.slice(0, 20)); ok.push(s.name);
+      st.src.push(...list.slice(0, 20)); if (list.length) ok.push(s.name);
     }).catch(() => { if (run === sxState.run) st.fail.push(s.name); })
-      .finally(() => { clearTimeout(t); if (run !== sxState.run) return; st.done++; st.live = ok.join("、"); sxRender(); });
-  });
+      .finally(() => { clearTimeout(t); if (run !== sxState.run) return; st.done++; st.live = ok.join("、"); sxRender(); work(); });
+  };
+  for (let i = 0; i < Math.min(6, searchable.length); i++) work();
 }
 
 /* ---------- clicks ---------- */
