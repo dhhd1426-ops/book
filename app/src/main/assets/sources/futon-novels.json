@@ -1,0 +1,233 @@
+[
+  {
+    "bookSourceName": "Royal Road",
+    "bookSourceUrl": "https://www.royalroad.com",
+    "bookSourceType": 0,
+    "bookSourceGroup": "英文轻小说 · Futon",
+    "bookSourceComment": "来自 Futon（AppFuton/Futon）的英文轻小说源，按其 Kotlin 代码改写成书源规则。网站改版或开启防护时可能失效。",
+    "enabled": true,
+    "header": "{\"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36\", \"Accept-Language\": \"en-US,en;q=0.9\"}",
+    "searchUrl": "/fictions/search?title={{key}}&page={{page}}",
+    "ruleSearch": {
+      "bookList": "@css:.fiction-list-item",
+      "name": "@css:h2.fiction-title a@text",
+      "bookUrl": "@css:h2.fiction-title a@href",
+      "coverUrl": "tag.img.0@src",
+      "author": "@css:span.author, a[href*='/profile/']@text",
+      "intro": "@css:.fiction-description@text",
+      "kind": "@css:.fiction-tag@text"
+    },
+    "ruleBookInfo": {
+      "coverUrl": "@css:.cover-art-container img, img.cover@src",
+      "intro": "@css:.description .portlet-body@text",
+      "author": "@css:h4 a[href*='/profile/']@text",
+      "kind": "@css:.fiction-tag, .tags a@text"
+    },
+    "ruleToc": {
+      "chapterList": "@css:#chapters tbody tr",
+      "chapterName": "tag.a.0@text",
+      "chapterUrl": "tag.a.0@href"
+    },
+    "ruleContent": {
+      "content": "<js>var d = new DOMParser().parseFromString(result, 'text/html');var css = [].map.call(d.querySelectorAll('style'), function (s) { return s.textContent; }).join(' ');(css.match(/\\.[\\w-]+\\s*\\{[^}]*display\\s*:\\s*none/g) || []).forEach(function (r) {  d.querySelectorAll('.' + r.match(/\\.([\\w-]+)/)[1]).forEach(function (e) { e.remove(); }); });var c = d.querySelector('.chapter-content');if (c) c.querySelectorAll('script, style, .portlet-title, .author-note-portlet').forEach(function (e) { e.remove(); });c ? c.innerHTML : ''</js>"
+    }
+  },
+  {
+    "bookSourceName": "FreeWebNovel",
+    "bookSourceUrl": "https://freewebnovel.com",
+    "bookSourceType": 0,
+    "bookSourceGroup": "英文轻小说 · Futon",
+    "bookSourceComment": "来自 Futon（AppFuton/Futon）的英文轻小说源，按其 Kotlin 代码改写成书源规则。网站改版或开启防护时可能失效。",
+    "enabled": true,
+    "header": "{\"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36\", \"Accept-Language\": \"en-US,en;q=0.9\"}",
+    "searchUrl": "/search?keyword={{key}}",
+    "ruleSearch": {
+      "bookList": "@css:div.li-row",
+      "name": "@css:h3.tit a@title||@css:.tit a@text",
+      "bookUrl": "@css:h3.tit a, .tit a@href",
+      "coverUrl": "@css:div.pic img@src",
+      "intro": "@css:div.desc@text",
+      "kind": "@css:a[href*='/genre/']@text"
+    },
+    "ruleBookInfo": {
+      "intro": "@css:div.inner@text",
+      "coverUrl": "@css:div.pic img@src",
+      "author": "@css:meta[property='og:novel:author']@content||@css:a[href*='/author/']@text",
+      "kind": "@css:meta[property='og:novel:genre']@content&&@css:meta[property='og:novel:status']@content",
+      "tocUrl": "@js:baseUrl.split('?')[0] + '?ajax=chapters&page=1&pageSize=200,' + JSON.stringify({headers: {'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json, text/javascript, */*; q=0.01', 'Referer': baseUrl.split('?')[0]}})"
+    },
+    "ruleToc": {
+      "chapterList": "<js>var j = null; try { j = JSON.parse(result); } catch (e) {}j && j.html != null ? '<ul id=\"idData\">' + j.html + '</ul>' : result</js>@css:#idData a",
+      "chapterName": "title||text",
+      "chapterUrl": "href",
+      "nextTocUrl": "<js>var j = null; try { j = JSON.parse(result); } catch (e) {}var p = +((baseUrl.match(/[?&]page=(\\d+)/) || [0, 1])[1]);j && p < (j.totalPage || 1) ? baseUrl.replace(/([?&]page=)\\d+/, '$1' + (p + 1)) + ',' + JSON.stringify({headers: {'X-Requested-With': 'XMLHttpRequest', 'Referer': baseUrl.split('?')[0]}}) : ''</js>"
+    },
+    "ruleContent": {
+      "content": "<js>var d = new DOMParser().parseFromString(result, 'text/html');var c = d.querySelector(\"div#article, #article\");if (c) c.querySelectorAll(\".ad-box, script, style, iframe, .m-page, .m-nav, a#prev_url, a#next_url, .reader-ad-skip, [id^=bg-ssp], .comments-widget, #e-comments\").forEach(function (e) { e.remove(); });c ? c.innerHTML : ''</js>"
+    }
+  },
+  {
+    "bookSourceName": "Scribble Hub",
+    "bookSourceUrl": "https://www.scribblehub.com",
+    "bookSourceType": 0,
+    "bookSourceGroup": "英文轻小说 · Futon",
+    "bookSourceComment": "来自 Futon（AppFuton/Futon）的英文轻小说源，按其 Kotlin 代码改写成书源规则。网站改版或开启防护时可能失效。",
+    "enabled": true,
+    "header": "{\"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36\", \"Accept-Language\": \"en-US,en;q=0.9\", \"Referer\": \"https://www.scribblehub.com/\"}",
+    "searchUrl": "/series-finder/?sf=1&sh={{key}}&sort=pageviews&order=desc&pg={{page}}",
+    "ruleSearch": {
+      "bookList": "@css:.search_main_box",
+      "name": "@css:.search_title a@text",
+      "bookUrl": "@css:.search_title a@href@js:result + ',' + JSON.stringify({headers: {Cookie: 'toc_show=10000; toc_sorder=asc'}})",
+      "coverUrl": "@css:.search_img img@src",
+      "author": "@css:span[title='Author'] a, .search_stats .a_un_st a@text",
+      "kind": "@css:.search_genre a@text",
+      "intro": "@css:.search_body@ownText"
+    },
+    "ruleBookInfo": {
+      "coverUrl": "@css:.fic_image img@src",
+      "intro": "@css:.wi_fic_desc@text",
+      "author": "@css:.auth_name_fic@text",
+      "kind": "@css:.fic_genre, .stag@text"
+    },
+    "ruleToc": {
+      "chapterList": "@css:.toc_ol li a.toc_a||@css:.toc_ol li a||@css:.wi_fic_table.toc a",
+      "chapterName": "text",
+      "chapterUrl": "href"
+    },
+    "ruleContent": {
+      "content": "<js>var d = new DOMParser().parseFromString(result, 'text/html');var c = d.querySelector(\"#chp_raw, .chp_raw\");if (c) c.querySelectorAll(\"script, style, iframe, .modern-footnotes-footnote, .sp-head\").forEach(function (e) { e.remove(); });c ? c.innerHTML : ''</js>"
+    }
+  },
+  {
+    "bookSourceName": "Ranobes",
+    "bookSourceUrl": "https://ranobes.net",
+    "bookSourceType": 0,
+    "bookSourceGroup": "英文轻小说 · Futon",
+    "bookSourceComment": "来自 Futon（AppFuton/Futon）的英文轻小说源，按其 Kotlin 代码改写成书源规则。网站改版或开启防护时可能失效。",
+    "enabled": true,
+    "header": "{\"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36\", \"Accept-Language\": \"en-US,en;q=0.9\"}",
+    "searchUrl": "/search/{{key}}/",
+    "ruleSearch": {
+      "bookList": "@css:.rank-story, article.story, .shortstory, .story_line",
+      "name": "@css:h3.title@text||@css:.title@text||@css:a[href]@title",
+      "bookUrl": "@css:.title a, h2 a, h3 a@href||@css:a[href]@href",
+      "coverUrl": "<js>var i = java.getString('@css:img[src]@src').split('\\n')[0];if (!i) { var m = java.getString(\"@css:[style*='background']@style\").match(/url\\(['\"]?([^'\")]+)/); i = m ? m[1] : ''; }(i.indexOf('//') === 0 ? 'https:' + i : i).replace('/thumbs/', '/')</js>",
+      "intro": "@css:.moreless__short@text||@css:.moreless__full@text||@css:.description@text"
+    },
+    "ruleBookInfo": {
+      "coverUrl": "@css:.poster img, .show-poster img, .r-fullstory-poster img@src##/thumbs/##/",
+      "intro": "@css:.moreless__full@text||@css:#fs-info .moreless@text||@css:.story@text",
+      "author": "@css:a[href*='/authors/'], a[href*='/author/']@text",
+      "tocUrl": "<js>var h = java.getString(\"@css:a[href*='/chapters/']@href\").split('\\n')[0], m = baseUrl.match(/\\/novels\\/(\\d+)-/);h || (m ? 'https://ranobes.net/chapters/' + m[1] + '/' : '')</js>"
+    },
+    "ruleToc": {
+      "chapterList": "-<js>var m = result.match(/window\\.__DATA__\\s*=\\s*(\\{[\\s\\S]*?\\});/);var j = null; try { j = m ? JSON.parse(m[1]) : null; } catch (e) {}j && j.chapters ? j.chapters : []</js>",
+      "chapterName": "$.title",
+      "chapterUrl": "$.link##ranobes\\.top##ranobes.net",
+      "nextTocUrl": "<js>var m = result.match(/window\\.__DATA__\\s*=\\s*(\\{[\\s\\S]*?\\});/);var j = null; try { j = m ? JSON.parse(m[1]) : null; } catch (e) {}var p = +((baseUrl.match(/\\/page\\/(\\d+)/) || [0, 1])[1]);j && p < Math.min(j.pages_count || 1, 100) ? 'https://ranobes.net/chapters/' + j.book_id + '/page/' + (p + 1) + '/' : ''</js>"
+    },
+    "ruleContent": {
+      "content": "<js>var d = new DOMParser().parseFromString(result, 'text/html');var c = d.querySelector(\"#arrticle, #article, .entry-content\");if (c) c.querySelectorAll(\"script, style, iframe, .ads, .share, .free-support-top, [id^=bg-ssp]\").forEach(function (e) { e.remove(); });c ? c.innerHTML : ''</js>"
+    }
+  },
+  {
+    "bookSourceName": "Lnori",
+    "bookSourceUrl": "https://lnori.com",
+    "bookSourceType": 0,
+    "bookSourceGroup": "英文轻小说 · Futon",
+    "bookSourceComment": "来自 Futon（AppFuton/Futon）的英文轻小说源，按其 Kotlin 代码改写成书源规则。网站改版或开启防护时可能失效。",
+    "enabled": true,
+    "header": "{\"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36\", \"Accept-Language\": \"en-US,en;q=0.9\"}",
+    "searchUrl": "https://lnori.com/library",
+    "ruleSearch": {
+      "bookList": "<js>var k = String(key).toLowerCase();java.getElements('@css:article.card').filter(function (c) {  var t = (c.getAttribute('data-t') || c.textContent) + ' ' + (c.getAttribute('data-a') || '');  return t.toLowerCase().indexOf(k) >= 0; }).slice(0, 40)</js>",
+      "name": "data-t||@css:.card-title, h2, h3@text",
+      "author": "data-a||@css:.popup-author@text##\\(.*$##",
+      "bookUrl": "@css:a[href*='/series/']@href||tag.a.0@href",
+      "coverUrl": "tag.img.0@src",
+      "intro": "@css:.popup-description@text",
+      "kind": "data-tags"
+    },
+    "ruleBookInfo": {
+      "coverUrl": "@css:.series-cover img, figure img@src",
+      "intro": "@css:.series-synopsis, .series-description, p.synopsis, p.description@text",
+      "author": "@css:.series-author a@text||@css:.series-author@text"
+    },
+    "ruleToc": {
+      "chapterList": "<js>var d = new DOMParser().parseFromString(result, 'text/html'), out = [];[].forEach.call(d.querySelectorAll(\"script[type='application/ld+json']\"), function (s) {  if (out.length) return; try { var r = JSON.parse(s.textContent), hp = r.hasPart;  if (hp) (Array.isArray(hp) ? hp : [hp]).forEach(function (b) { if (b && b.url) out.push({name: b.name || ('Volume ' + (out.length + 1)), url: b.url}); });  } catch (e) {} });if (!out.length) { var seen = {};  [].forEach.call(d.querySelectorAll(\".vol-grid article.card a[href*='/book/'], a[href*='/book/']\"), function (a) {    var h = new URL(a.getAttribute('href'), baseUrl).href; if (seen[h]) return; seen[h] = 1;    var card = a.closest('article'), t = ((card && card.querySelector('.card-title, h2, h3')) || a).textContent.trim();    if (!t || /^start reading$/i.test(t)) t = a.getAttribute('aria-label') || ('Volume ' + (out.length + 1));    out.push({name: t, url: h}); }); }out</js>",
+      "chapterName": "$.name",
+      "chapterUrl": "$.url"
+    },
+    "ruleContent": {
+      "content": "<js>var d = new DOMParser().parseFromString(result, 'text/html');var c = d.querySelector(\"article.content-body, article.reader-content, article, main\");if (c) c.querySelectorAll(\"script, style, nav, header, footer, noscript, .ad, .ads, .advertisement\").forEach(function (e) { e.remove(); });c ? c.innerHTML : ''</js>"
+    }
+  },
+  {
+    "bookSourceName": "LNCrawler",
+    "bookSourceUrl": "https://lncrawler.monster",
+    "bookSourceType": 0,
+    "bookSourceGroup": "英文轻小说 · Futon",
+    "bookSourceComment": "来自 Futon（AppFuton/Futon）的英文轻小说源，按其 Kotlin 代码改写成书源规则。网站改版或开启防护时可能失效。",
+    "enabled": true,
+    "header": "{\"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36\", \"Accept-Language\": \"en-US,en;q=0.9\"}",
+    "searchUrl": "https://api.lncrawler.monster/novels/search/?query={{key}}&sort_by=popularity&sort_order=desc&page={{page}}&page_size=20",
+    "ruleSearch": {
+      "bookList": "$.results[*]",
+      "name": "$.title",
+      "author": "$.prefered_source.authors[0]",
+      "coverUrl": "$.prefered_source.cover_min_url||$.prefered_source.cover_url",
+      "kind": "$.prefered_source.tags[0]",
+      "bookUrl": "https://api.lncrawler.monster/novels/{{$.slug}}/"
+    },
+    "ruleBookInfo": {
+      "init": "<js>var n = JSON.parse(result), slug = baseUrl.match(/novels\\/([^/]+)/)[1];var ss = (n.prefered_source && n.prefered_source.source_slug) || (n.sources && n.sources[0] && n.sources[0].source_slug) || '';var d = ss ? JSON.parse(java.ajax('https://api.lncrawler.monster/novels/' + slug + '/' + ss + '/')) : {};d.__slug = slug; d.__ss = ss; d.__title = n.title; JSON.stringify(d)</js>",
+      "name": "$.__title",
+      "author": "$.authors[0]",
+      "intro": "$.synopsis",
+      "coverUrl": "$.cover_url",
+      "kind": "$.status&&$.tags[0]",
+      "tocUrl": "https://api.lncrawler.monster/novels/{{$.__slug}}/{{$.__ss}}/chapters/?page=1&page_size=500"
+    },
+    "ruleToc": {
+      "chapterList": "$.chapters[*]",
+      "chapterName": "$.title",
+      "chapterUrl": "@js:baseUrl.replace(/chapters\\/\\?.*$/, 'chapter/') + '{{$.chapter_id}}/'",
+      "nextTocUrl": "<js>var j = JSON.parse(result), p = +((baseUrl.match(/[?&]page=(\\d+)/) || [0, 1])[1]);p < (j.total_pages || 1) ? baseUrl.replace(/([?&]page=)\\d+/, '$1' + (p + 1)) : ''</js>"
+    },
+    "ruleContent": {
+      "content": "$.body"
+    }
+  },
+  {
+    "bookSourceName": "Wuxiaworld（实验）",
+    "bookSourceUrl": "https://www.wuxiaworld.com",
+    "bookSourceType": 0,
+    "bookSourceGroup": "英文轻小说 · Futon",
+    "bookSourceComment": "来自 Futon（AppFuton/Futon）的英文轻小说源，按其 Kotlin 代码改写成书源规则。网站改版或开启防护时可能失效。",
+    "enabled": true,
+    "header": "{\"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36\", \"Accept-Language\": \"en-US,en;q=0.9\"}",
+    "searchUrl": "https://www.wuxiaworld.com/novels?search={{key}}",
+    "ruleSearch": {
+      "bookList": "<js>var out = [], i = result.indexOf('window.__REACT_QUERY_STATE__ =');var v = function (x) { return x && typeof x === 'object' && 'value' in x ? x.value : x; };if (i >= 0) { var s = result.indexOf('{', i), e = result.indexOf('};\\n', s); if (e < 0) e = result.indexOf('};', s);  try { (JSON.parse(result.slice(s, e + 1)).queries || []).forEach(function (q) {    if (!q.queryKey || q.queryKey[0] !== 'novels') return;    (((q.state || {}).data || {}).pages || []).forEach(function (p) { (p.items || []).forEach(function (it) {      out.push({name: v(it.name), slug: v(it.slug), cover: v(it.coverUrl), author: v(it.authorName), intro: v(it.synopsis) || v(it.description) || ''}); }); }); });  } catch (err) {} }var k = String(key).toLowerCase(); out.filter(function (b) { return b.name && String(b.name).toLowerCase().indexOf(k) >= 0; })</js>",
+      "name": "$.name",
+      "author": "$.author",
+      "coverUrl": "$.cover",
+      "intro": "$.intro",
+      "bookUrl": "https://www.wuxiaworld.com/novel/{{$.slug}}"
+    },
+    "ruleBookInfo": {
+      "coverUrl": "@css:img[src*='covers'], img.cover@src",
+      "intro": "@css:.synopsis, .description, div[class*='synopsis']@text",
+      "author": "@css:span[class*='author'], div[class*='author']@text"
+    },
+    "ruleToc": {
+      "chapterList": "<js>var slug = baseUrl.split('/novel/')[1].split(/[/?#]/)[0], seen = {};java.getElements(\"@css:a[href*='/chapter/'], a[href*='chapter-'], a[href*='snd-']\").filter(function (a) {  var h = new URL(a.getAttribute('href'), baseUrl).href;  if (h.indexOf('/novel/' + slug + '/') < 0 || seen[h]) return false; seen[h] = 1; return true; })</js>",
+      "chapterName": "text",
+      "chapterUrl": "href"
+    },
+    "ruleContent": {
+      "content": "<js>var d = new DOMParser().parseFromString(result, 'text/html');var c = d.querySelector(\".chapter-body, .fr-view, .chapter-content, #chapter-content\");if (c) c.querySelectorAll(\"script, style, iframe, button, .chapter-nav, .ad-box\").forEach(function (e) { e.remove(); });c ? c.innerHTML : ''</js>"
+    }
+  }
+]

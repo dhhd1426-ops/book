@@ -414,6 +414,8 @@ h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
 .src .stt.slow{--dot:#c08a2e}
 .src .stt.bad{--dot:#b5452f}
 .src .stt.miss{--dot:#b5452f;color:#b5452f;letter-spacing:.04em}
+/* ---------- 书源 · 自带书源包 ---------- */
+.src-pack{grid-column:1 / -1}
 /* ---------- 书源书 · 详情 / 正文状态 ---------- */
 .dt-src{margin:-4px 0 10px;font-size:12px;line-height:1.6;color:var(--ink-2);text-align:center}
 .dt-src b{color:#b5452f;font-weight:500}
@@ -2014,6 +2016,7 @@ function sheetHome(){
       <button class="tile" type="button" data-add="file"><span class="ic">${ic.file}</span><b>本地导入</b><small>选择 .json 书源文件，可一次导入多个</small></button>
       <button class="tile" type="button" data-add="link"><span class="ic">${ic.link}</span><b>网络导入</b><small>粘贴书源或订阅地址</small></button>
       <button class="tile" type="button" data-add="qr"><span class="ic">${ic.qr}</span><b>扫码导入</b><small>扫描别人分享的书源二维码</small></button>
+      <button class="tile src-pack" type="button" data-add="futon"><span class="ic">${ic.file}</span><b>Futon 小说源</b><small>随 App 自带的 7 个英文轻小说源：Royal Road、FreeWebNovel、Scribble Hub 等</small></button>
     </div>
     <button class="help" type="button" data-add="help"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M9.8 9.5a2.3 2.3 0 1 1 3.2 2.1c-.7.3-1 .8-1 1.5v.4M12 16.5v.2"/></svg>书源是什么、怎么写</button>`;
 }
@@ -2055,6 +2058,7 @@ addSheet.addEventListener("click", e => {
   const k = e.target.closest("[data-add]")?.dataset.add; if (!k) return;
   if (k === "new") { closeSheet(); toast("新建书源：规则编辑器下一步设计"); }
   if (k === "file") document.getElementById("srcFile").click();
+  if (k === "futon") importBundled("sources/futon-novels.json");
   if (k === "link") { sheetLink(); stagger([...addSheet.querySelectorAll(".urlform > *")], 0, 8); }
   if (k === "home") { sheetHome(); stagger([...addSheet.querySelectorAll(".tile")], 0, 10); }
   if (k === "qr") toast("扫码需要相机，安装版里接入");
@@ -2194,6 +2198,18 @@ function addSources(list, failedFiles = 0){
   const skipped = list.length - fresh.length - updated;
   toast(fresh.length ? `已导入 ${fresh.length} 个书源${kinds ? "（" + kinds + "）" : ""}${updated ? `，更新 ${updated} 个的搜索规则` : ""}${skipped ? `，跳过 ${skipped} 个重复` : ""}${failedFiles ? `，${failedFiles} 个链接下载失败` : ""}`
     : updated ? `已更新 ${updated} 个书源的搜索规则` : "这些书源已经在列表里了");
+}
+/* source packs shipped inside the app (assets/sources/*.json) — read like a local file */
+function importBundled(path){
+  const x = new XMLHttpRequest();
+  x.open("GET", path);
+  x.onload = () => {
+    const r = parseSourceFile(String(x.responseText || ""));
+    if (!r.list) { toast("自带的书源文件读取失败"); return; }
+    closeSheet(); addSources(r.list);
+  };
+  x.onerror = () => toast("自带的书源文件读取失败");
+  x.send();
 }
 document.getElementById("srcFile").addEventListener("change", e => {
   const f = e.target.files[0]; e.target.value = ""; if (!f) return;
@@ -3448,7 +3464,7 @@ async function lgFetch(req, signal){
 }
 async function legadoSearch(src, q, signal){
   const s = src.search, req = lgRequest(src, q);
-  const res = await lgFetch(req, signal).catch(e => { throw Object.assign(e, { url: req.url }); });
+  const res = await (req.webView && window.ShelfNative?.render ? lgRender(req, signal) : lgFetch(req, signal)).catch(e => { throw Object.assign(e, { url: req.url }); });
   const env = { key: q, page: 1, baseUrl: res.url, source: lgSource(src) };
   const root = lgCtx(res.text);
   let items = [], err = "";
@@ -3460,7 +3476,7 @@ async function legadoSearch(src, q, signal){
     const g = k => { if (!s.rule[k]) return ""; try { return lgStr(it, s.rule[k], e); } catch (_) { return ""; } };
     return { t: one(g("name")), a: one(g("author")).replace(/^(作\s*者)\s*[:：]\s*/, ""), cat: one(g("kind").split(/[\n,，|]/)[0]) || (src.group || "").split(/\s/)[0] || "小说",
       syn: one(g("intro")).slice(0, 120), cover: abs(g("coverUrl")), url: abs(g("bookUrl")) || res.url, last: one(g("lastChapter")), remote: src.name,
-      sid: src.id, burl: g("bookUrl").trim() || res.url, base: res.url, words: one(g("wordCount")) };
+      sid: src.id, burl: lgFirst(g("bookUrl")) || res.url, base: res.url, words: one(g("wordCount")) };
   }).filter(b => b.t);
   /* what came back, so an empty result can say why */
   list.diag = { url: req.url, head: res.text.replace(/\s+/g, " ").trim().slice(0, 240), kind: root instanceof Node ? "网页" : root && typeof root === "object" ? "JSON" : "文本",
@@ -3470,7 +3486,8 @@ async function legadoSearch(src, q, signal){
 /* ---------- reading a book from a Legado source: 详情 → 目录 → 正文 ---------- */
 const lgSrcOf = b => sources.find(s => s.id === b.lg.sid);
 const lgOneLine = v => String(v || "").replace(/\s+/g, " ").trim();
-function lgAbs(v, base){ v = String(v || "").split(/,\s*\{/)[0].trim(); if (!v) return null; if (/^data:image/i.test(v)) return v; if (/^(data:|javascript:)/i.test(v)) return null; try { return new URL(v, base).href; } catch (_) { return null; } }
+const lgFirst = v => String(v || "").split("\n").map(x => x.trim()).find(Boolean) || "";
+function lgAbs(v, base){ v = lgFirst(v).split(/,\s*\{/)[0].trim(); if (!v) return null; if (/^data:image/i.test(v)) return v; if (/^(data:|javascript:)/i.test(v)) return null; try { return new URL(v, base).href; } catch (_) { return null; } }
 const lgNeed = (src, part) => { if (!src) throw new Error("书源已被删除"); if (!src.search?.[part]) throw new Error(`书源缺少${{ info: "详情", toc: "目录", content: "正文" }[part]}规则：在书源管理里重新导入一次`); };
 function lgLoadBook(b){
   if (b.lg.toc) return Promise.resolve(b);
@@ -3491,26 +3508,28 @@ function lgLoadBook(b){
     const wc = lgOneLine(g("wordCount")) || kind.find(x => /^[\d.]+\s*万/.test(x)) || "", wn = parseFloat(wc);
     if (wn) b.words = /万/.test(wc) ? wn.toFixed(1) : (wn / 10000).toFixed(1);
     const last = lgOneLine(g("lastChapter")); if (last) b.last = last;
-    const tocRaw = R.tocUrl ? g("tocUrl").trim() : "";
+    const tocRaw = R.tocUrl ? lgFirst(g("tocUrl")) : "";
     /* 目录 (follows nextTocUrl for a few pages) */
     let tpage = tocRaw && lgAbs(tocRaw, page.url) !== page.url ? await lgGet(src, tocRaw, page.url, envB) : page;
-    const list = [], seen = new Set([tpage.url]);
+    const list = [], seen = new Set([tpage.url]), rev = /^\s*-/.test(T.chapterList), listRule = T.chapterList.replace(/^\s*[-+]/, "");
+    const withJs = r => /<js>|@js:/i.test(r || "");
     let vol = "";
-    for (let k = 0; k < 30 && tpage; k++) {
+    for (let k = 0; k < 100 && tpage; k++) {
       const tenv = { ...envB, baseUrl: tpage.url };
       if (T.preUpdateJs && !k) try { lgJs(T.preUpdateJs.replace(/^@js:|^<js>|<\/js>$/gi, ""), { ...tenv, result: tpage.text }); } catch (_) {}
-      for (const it of lgList(/<js>|@js:/i.test(T.chapterList) ? tpage.text : lgCtx(tpage.text), T.chapterList, tenv)) {
+      for (const it of lgList(withJs(listRule) ? tpage.text : lgCtx(tpage.text), listRule, tenv)) {
         const e = { ...tenv, item: it }, r = rule => { if (!rule) return ""; try { return lgStr(it, rule, e); } catch (_) { return ""; } };
         const name = lgOneLine(r(T.chapterName)); if (!name) continue;
-        const url = r(T.chapterUrl).trim(), isVol = T.isVolume ? /^(true|1|yes)$/i.test(lgOneLine(r(T.isVolume))) : false;
+        const url = lgFirst(r(T.chapterUrl)), isVol = T.isVolume ? /^(true|1|yes)$/i.test(lgOneLine(r(T.isVolume))) : false;
         if (isVol) { vol = name; continue; }
         list.push({ name, url: url || tpage.url, base: tpage.url, vol, vip: T.isVip ? /^(true|1)$/i.test(lgOneLine(r(T.isVip))) : false });
       }
-      const next = T.nextTocUrl ? lgStr(lgCtx(tpage.text), T.nextTocUrl, tenv).split("\n").map(x => x.trim()).find(u => u && !seen.has(lgAbs(u, tpage.url))) : "";
+      const next = T.nextTocUrl ? lgStr(withJs(T.nextTocUrl) ? tpage.text : lgCtx(tpage.text), T.nextTocUrl, tenv).split("\n").map(x => x.trim()).find(u => u && !seen.has(lgAbs(u, tpage.url))) : "";
       if (!next) break;
       seen.add(lgAbs(next, tpage.url)); tpage = await lgGet(src, next, tpage.url, envB);
     }
     if (!list.length) throw new Error("目录是空的：书源的目录规则没解析出章节");
+    if (rev) list.reverse();   // "-" reverses the whole list, after all pages, as in Legado
     b.lg.toc = list; b.chapters = list.length; b.reading = Math.min(b.reading || 1, list.length);
     b.status = b.kinds?.find(x => /完|连载|更新/.test(x)) || b.status || "连载";
     return b;
@@ -3536,7 +3555,7 @@ async function lgChapter(b, n){
     const env = { source: lgSource(src), baseUrl: page.url, book: lgBookVar(b), chapter: { title: ch.name, url: ch.url, index: n - 1 } };
     let body = /<js>|@js:/i.test(C.content) ? page.text : lgCtx(page.text);
     parts.push(lgStr(body, C.content, env));
-    const nx = C.nextContentUrl ? lgStr(lgCtx(page.text), C.nextContentUrl, env).split("\n")[0].trim() : "";
+    const nx = C.nextContentUrl ? lgFirst(lgStr(/<js>|@js:/i.test(C.nextContentUrl) ? page.text : lgCtx(page.text), C.nextContentUrl, env)) : "";
     const nextCh = b.lg.toc[n];
     url = nx && !seen.has(lgAbs(nx, page.url)) && !(nextCh && lgAbs(nx, page.url) === lgAbs(nextCh.url, nextCh.base)) ? nx : ""; base = page.url;
   }
