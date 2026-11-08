@@ -817,6 +817,74 @@ h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
 .gsx-note{margin:4px 0 0;padding:12px 14px;border-radius:12px;background:color-mix(in oklab,var(--ink) 5%,transparent);font-size:12px;line-height:1.75;letter-spacing:.04em;color:var(--ink-2)}
 .gsx-fail{margin:0;font-size:12px;letter-spacing:.06em;color:var(--ink-2);line-height:1.7}
 @media (min-width:600px){ .gsx-sec{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:40px} .gsx-st{grid-column:1/-1} }
+
+/* ---------- 搜索页 (sx-) ---------- */
+.sx{position:absolute;inset:0;z-index:36;background:var(--paper);color:var(--ink);display:none}
+.sx.on{display:flex}
+.sx-in{--gut:max(24px,env(safe-area-inset-left,0px));flex:1;min-width:0;max-width:820px;margin:0 auto;display:flex;flex-direction:column;
+  padding:calc(16px + env(safe-area-inset-top,0px)) var(--gut) 0;box-sizing:border-box}
+.sx-bar{display:flex;align-items:center;gap:8px}
+.sx-bar .search{flex:1;margin:0}
+.sx-body{flex:1;min-height:0;overflow-y:auto;margin:0 calc(-1 * var(--gut));padding:6px var(--gut) 40px;scrollbar-width:none;display:flex;flex-direction:column;gap:22px}
+.sx-body::-webkit-scrollbar{display:none}
+.sx-sec{display:flex;flex-direction:column;gap:12px;margin-top:10px}
+.sx-h{display:flex;align-items:baseline;gap:10px}
+.sx-h b{font-weight:500;font-size:15px;letter-spacing:.16em}
+.sx-h small{font-family:var(--f-mono);font-size:10px;letter-spacing:.12em;color:var(--ink-2)}
+.sx-h .txt-btn{margin-left:auto;color:var(--ink-2)}
+.sx-hist{display:flex;flex-wrap:wrap;gap:8px}
+.sx-chip{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 13px;border:0;border-radius:999px;background:var(--sheet);box-shadow:0 0 0 1px var(--edge);
+  font:inherit;font-size:13px;letter-spacing:.08em;color:var(--ink);cursor:pointer;max-width:100%}
+.sx-chip svg{color:var(--ink-2);flex-shrink:0}
+.sx-chip.ask{cursor:default;color:var(--ink-2)}
+.sx-hot{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:minmax(0,1fr)}
+.sx-hot button{width:100%;min-height:46px;display:flex;align-items:center;gap:12px;border:0;border-bottom:1px solid color-mix(in oklab,var(--ink-3) 60%,transparent);background:none;padding:0;font:inherit;color:var(--ink);text-align:left;cursor:pointer}
+.sx-n{width:22px;font-size:17px;font-style:italic;font-weight:600;color:var(--ink-3);text-align:center;font-variant-numeric:tabular-nums}
+.sx-hot li:nth-child(-n+3) .sx-n{color:var(--accent)}
+.sx-ht{flex:1;min-width:0;font-size:14.5px;letter-spacing:.1em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sx-flag{font-family:var(--f-mono);font-size:9px;padding:2px 5px;border-radius:4px;background:color-mix(in oklab,var(--accent) 16%,transparent);color:var(--accent)}
+.sx-flag.new{background:color-mix(in oklab,#4f8a5b 18%,transparent);color:#4f8a5b}
+.sx-heat{font-family:var(--f-mono);font-size:10px;color:var(--ink-2);width:52px;text-align:right}
+.sx-sug{list-style:none;margin:0;padding:0}
+.sx-sug button{width:100%;min-height:50px;display:flex;align-items:center;gap:12px;border:0;border-bottom:1px solid color-mix(in oklab,var(--ink-3) 60%,transparent);background:none;padding:0;font:inherit;color:var(--ink);text-align:left;cursor:pointer}
+.sx-sug svg{color:var(--ink-2);flex-shrink:0}
+.sx-sug span{flex:1;min-width:0;font-size:15px;letter-spacing:.08em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sx-sug mark,.sx-i mark{background:none;color:var(--accent);font-weight:600}
+.sx-sug em{font-style:normal;font-size:11.5px;color:var(--ink-2);letter-spacing:.06em;white-space:nowrap}
+.sx-tabs{display:flex;align-items:flex-end;gap:22px;border-bottom:1px solid var(--ink-3);margin-top:8px}
+.sx-tabs button{height:40px;padding:0;border:0;background:none;font:inherit;font-size:14px;letter-spacing:.16em;color:var(--ink-2);cursor:pointer;position:relative}
+.sx-tabs button[aria-selected="true"]{color:var(--ink)}
+.sx-tabs button[aria-selected="true"]::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--ink)}
+.sx-stat{margin-left:auto;padding-bottom:10px;font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;color:var(--ink-2);white-space:nowrap}
+.sx-prog{height:2px;margin-top:-22px;background:var(--ink-3);overflow:hidden}
+.sx-prog i{display:block;height:100%;background:var(--accent);transform-origin:0 50%;transition:transform .4s}
+.sx-author{display:flex;align-items:center;gap:14px;padding:12px 14px;border:0;border-radius:14px;background:var(--sheet);box-shadow:0 0 0 1px var(--edge);font:inherit;color:var(--ink);text-align:left;cursor:pointer}
+.sx-av{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--ink);color:var(--paper);font-size:18px;font-weight:600}
+.sx-author > span:nth-child(2){flex:1;display:flex;flex-direction:column;gap:3px}
+.sx-author b{font-weight:500;font-size:16px;letter-spacing:.14em}
+.sx-author small{font-size:11.5px;color:var(--ink-2);letter-spacing:.06em}
+.sx-author svg{color:var(--ink-2)}
+.sx-list{display:flex;flex-direction:column}
+.sx-r{position:relative;border-bottom:1px solid var(--ink-3)}
+.sx-open{width:100%;display:flex;gap:14px;padding:14px 84px 14px 0;border:0;background:none;font:inherit;color:var(--ink);text-align:left;cursor:pointer;animation:gsx-in .45s cubic-bezier(.16,1,.3,1)}
+.sx-c{width:62px;flex-shrink:0;aspect-ratio:5/7;overflow:hidden;background:var(--sheet-side);box-shadow:0 0 0 1px var(--edge),4px 7px 14px -8px var(--shadow)}
+.sx-c img{width:100%;height:100%;object-fit:cover;display:block;filter:var(--art)}
+.sx-i{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.sx-i b{font-weight:500;font-size:15.5px;letter-spacing:.08em}
+.sx-i small{font-size:11.5px;color:var(--ink-2);letter-spacing:.04em}
+.sx-syn{font-size:12.5px;line-height:1.65;color:var(--ink-2);letter-spacing:.03em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.sx-meta{display:flex;gap:6px;align-items:center;margin-top:2px;flex-wrap:wrap}
+.sx-tag{font-style:normal;font-family:var(--f-mono);font-size:9.5px;letter-spacing:.08em;padding:2px 6px;border-radius:4px;box-shadow:inset 0 0 0 1px var(--ink-3);color:var(--ink-2)}
+.sx-tag.own{color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink-2)}
+.sx-tag.live{color:#4f8a5b;box-shadow:inset 0 0 0 1px color-mix(in oklab,#4f8a5b 50%,transparent)}
+.sx-sc{font-style:normal;font-family:var(--f-mono);font-size:10.5px;color:var(--accent)}
+.sx-r .want{position:absolute;right:0;top:50%;transform:translateY(-50%)}
+.sx-none{display:flex;flex-direction:column;align-items:center;gap:10px;padding:28px 10px 6px;text-align:center}
+.sx-none b{font-weight:500;font-size:16px;letter-spacing:.12em}
+.sx-none span{font-size:12.5px;line-height:1.75;color:var(--ink-2);max-width:340px}
+.sx-none .btn{margin-top:6px;flex:none;padding:0 22px}
+.sx button:focus-visible{outline:1.5px solid var(--accent);outline-offset:2px}
+@media (min-width:600px){ .sx-in{--gut:clamp(36px,5vw,64px)} .sx-hot{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:40px} }
 </style>
 
 <main class="app">
@@ -876,7 +944,7 @@ h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
       <label class="search" for="libSearch">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
         <span class="sr">搜索书库</span>
-        <input id="libSearch" type="search" placeholder="搜索全部书源：书名、作者" autocomplete="off" enterkeyhint="search">
+        <input id="libSearch" type="search" placeholder="搜索书名、作者" autocomplete="off" readonly>
       </label>
       <label class="imp-btn" for="importFile" title="导入本地书籍（TXT · EPUB）">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>导入</span>
@@ -1010,6 +1078,19 @@ h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
   </section>
   <div class="snack" id="snack" role="status" aria-live="polite"><span class="ic"></span><span id="snackTxt"></span><button type="button" id="snackBtn">撤销</button></div>
 
+  <section class="sx" id="sx" aria-label="搜索">
+    <div class="sx-in">
+      <form class="sx-bar" id="sxForm" role="search">
+        <label class="search" for="sxInput">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
+          <span class="sr">搜索书名、作者、标签</span>
+          <input id="sxInput" type="search" placeholder="书名、作者、标签" autocomplete="off" enterkeyhint="search">
+        </label>
+        <button class="txt-btn" type="button" id="sxCancel">取消</button>
+      </form>
+      <div class="sx-body" id="sxBody" aria-live="polite"></div>
+    </div>
+  </section>
   <div class="dveil" id="dveil"></div>
   <button class="close dclose" id="dclose" type="button" aria-label="关闭详情"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9"/></svg></button>
   <div class="veil" id="veil"></div>
@@ -2551,7 +2632,7 @@ function discBook(d){
     let h = 0; for (const ch of d.t) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
     b = { no: BOOKS.length + 1, ext: true, title: d.t, author: d.a, status: "已完结", code: "PD-" + String(h % 90000 + 10000),
       chapters: 40 + h % 90, reading: 1, progress: 0, state: "want", words: (20 + h % 60 + (h % 10) / 10).toFixed(1),
-      cat: info.cat || "公版", sc: info.sc || null, cover: recCover(d),
+      cat: info.cat || "公版", sc: info.sc || null, cover: d.cover || recCover(d),
       syn: info.bl ? `${info.bl}${d.src ? `由「${d.src}」提供，` : ""}已进入公版，可以直接阅读。` : `${d.a}的作品，由「${d.src || "公版书库"}」提供，已进入公版，可以直接阅读。` };
     BOOKS.push(b);
   }
@@ -2716,10 +2797,203 @@ gsPane.addEventListener("click", e => {
   openDetail({ ...d, src }, r.querySelector("img"));
 });
 
+/* ================= 搜索页 (sx-): history · hot list · suggestions · results, real OPDS search ================= */
+const sxEl = document.getElementById("sx"), sxBody = document.getElementById("sxBody"), sxInput = document.getElementById("sxInput");
+let sxHist = [], sxAsk = [], sxState = { q: "", mode: "home", tab: "all", run: 0 };
+try { sxHist = JSON.parse(localStorage.getItem("shelf-hist") || "[]"); sxAsk = JSON.parse(localStorage.getItem("shelf-ask") || "[]"); } catch (_) {}
+const saveHist = () => { try { localStorage.setItem("shelf-hist", JSON.stringify(sxHist)); localStorage.setItem("shelf-ask", JSON.stringify(sxAsk)); } catch (_) {} };
+/* the catalogue the demo search knows: your shelf + the built-in public-domain books */
+const SX_BOOKS = () => {
+  const m = new Map();
+  OWN.forEach(b => m.set(b.title, { t: b.title, a: b.author, cat: b.group || "小说", own: b.no - 1, words: b.words, status: b.status, syn: b.syn, hot: 40 + hashStr(b.title) % 50 }));
+  DISC.forEach(d => { if (!m.has(d.t)) m.set(d.t, { t: d.t, a: d.a, cat: d.cat, sc: d.sc, syn: d.bl, hot: 60 + Math.round(d.sc * 4) }); });
+  REC_POOL.forEach(d => { if (!m.has(d.t)) m.set(d.t, { t: d.t, a: d.a, cat: "公版", hot: 30 + hashStr(d.t) % 40 }); });
+  return [...m.values()];
+};
+function score(b, q){
+  const t = b.t.toLowerCase(), a = (b.a || "").toLowerCase(); q = q.toLowerCase();
+  if (t === q) return 100; if (t.startsWith(q)) return 85; if (t.includes(q)) return 70;
+  if (a === q) return 60; if (a.includes(q)) return 45;
+  if ((b.cat || "").includes(q)) return 30;
+  return 0;
+}
+/* "similar" for empty results: share of the query's characters found in the title */
+const fuzzy = (b, q) => { const cs = [...new Set(q)].filter(c => c.trim()); return cs.length ? cs.filter(c => b.t.includes(c)).length / cs.length : 0; };
+
+/* ---------- open / close ---------- */
+function openSearch(){
+  if (sel >= 0 || det) return;
+  sxEl.classList.add("on"); sxInput.value = ""; sxState = { q: "", mode: "home", tab: "all", run: sxState.run + 1 }; sxRender();
+  if (!reduce) { sxEl.animate([{ opacity: 0 }, { opacity: 1 }], { duration: ms(260) || 1, easing: "ease-out" });
+    sxEl.querySelector(".sx-bar").animate([{ transform: "translateY(-12px)", opacity: 0 }, { transform: "none", opacity: 1 }], { duration: ms(420) || 1, easing: EASE_OUT }); }
+  setTimeout(() => sxInput.focus(), 60);
+}
+function closeSearch(){
+  sxState.run++; sxInput.blur();
+  sxEl.animate([{ opacity: 1 }, { opacity: 0 }], { duration: ms(200) || 1, easing: "ease-in" }).finished.then(() => sxEl.classList.remove("on"));
+}
+document.getElementById("libSearch").addEventListener("pointerdown", e => { e.preventDefault(); openSearch(); });
+document.getElementById("libSearch").addEventListener("focus", e => { e.target.blur(); openSearch(); });
+document.getElementById("sxCancel").addEventListener("click", closeSearch);
+sxInput.addEventListener("input", () => {
+  const q = sxInput.value.trim(); sxState.q = q; sxState.run++;
+  sxState.mode = q ? "suggest" : "home"; sxRender();
+});
+document.getElementById("sxForm").addEventListener("submit", e => { e.preventDefault(); const q = sxInput.value.trim(); if (q) doSearch(q); });
+function doSearch(q){
+  sxInput.value = q; sxInput.blur();
+  sxHist = [q, ...sxHist.filter(x => x !== q)].slice(0, 12); saveHist();
+  sxState = { q, mode: "results", tab: "all", run: sxState.run + 1, src: [], done: 0, total: 0, fail: [] };
+  sxRender(); runSources(q);
+}
+
+/* ---------- rendering ---------- */
+const ico = {
+  book: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 4.5h10.5a3 3 0 0 1 3 3v12H8a3 3 0 0 1-3-3z"/><path d="M5 16.5a3 3 0 0 1 3-3h10.5"/></svg>',
+  user: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c1.2-3.6 3.8-5.5 7-5.5s5.8 1.9 7 5.5"/></svg>',
+  tag: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 12.5V4h8.5L20 11.5 11.5 20z"/><circle cx="8.5" cy="8.5" r="1.3"/></svg>',
+  find: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>',
+  clock: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>'
+};
+function sxRender(){
+  const { mode, q } = sxState;
+  if (mode === "home") {
+    const hot = SX_BOOKS().sort((a, b) => b.hot - a.hot).slice(0, 10);
+    sxBody.innerHTML = `
+      ${sxHist.length ? `<section class="sx-sec"><div class="sx-h"><b>搜索历史</b><button class="txt-btn" type="button" data-sx="clear">清空</button></div>
+        <div class="sx-hist">${sxHist.map(h => `<button class="sx-chip" type="button" data-q="${esc(h)}">${ico.clock}${esc(h)}</button>`).join("")}</div></section>` : ""}
+      <section class="sx-sec"><div class="sx-h"><b>热搜榜</b><small>本周 · 示例数据</small></div>
+        <ol class="sx-hot">${hot.map((b, i) => `<li><button type="button" data-q="${esc(b.t)}"><span class="sx-n">${i + 1}</span><span class="sx-ht">${esc(b.t)}</span>
+          ${i < 3 ? `<span class="sx-flag">热</span>` : i === 5 ? `<span class="sx-flag new">新</span>` : ""}<span class="sx-heat">${(b.hot / 10).toFixed(1)}万</span></button></li>`).join("")}</ol></section>
+      <section class="sx-sec"><div class="sx-h"><b>大家都在搜</b></div>
+        <div class="sx-hist">${TAGS.slice(0, 10).map(([t]) => `<button class="sx-chip" type="button" data-q="${t}">${ico.tag}${t}</button>`).join("")}</div></section>
+      ${sxAsk.length ? `<section class="sx-sec"><div class="sx-h"><b>我的求书</b><small>${sxAsk.length} 本 · 有书源收录时提醒你</small></div>
+        <div class="sx-hist">${sxAsk.map(t => `<span class="sx-chip ask">${esc(t)}</span>`).join("")}</div></section>` : ""}`;
+    return;
+  }
+  if (mode === "suggest") {
+    const books = SX_BOOKS().map(b => ({ b, s: score(b, q) })).filter(x => x.s >= 45 && score({ t: x.b.t, a: "" }, q)).sort((a, b) => b.s - a.s).slice(0, 6);
+    const authors = [...new Set(SX_BOOKS().filter(b => (b.a || "").includes(q)).map(b => b.a))].slice(0, 3);
+    const tags = TAGS.filter(([t]) => t.includes(q)).slice(0, 2);
+    sxBody.innerHTML = `<ul class="sx-sug">
+      <li><button type="button" data-q="${esc(q)}">${ico.find}<span>搜索「<b>${esc(q)}</b>」</span><em>全部书源</em></button></li>
+      ${books.map(({ b }) => `<li><button type="button" data-q="${esc(b.t)}">${ico.book}<span>${mark(b.t, q)}</span><em>${esc(b.a || "")}</em></button></li>`).join("")}
+      ${authors.map(a => `<li><button type="button" data-q="${esc(a)}">${ico.user}<span>${mark(a, q)}</span><em>作者 · ${SX_BOOKS().filter(b => b.a === a).length} 部</em></button></li>`).join("")}
+      ${tags.map(([t, n]) => `<li><button type="button" data-q="${t}">${ico.tag}<span>${mark(t, q)}</span><em>标签 · ${n} 万人在读</em></button></li>`).join("")}
+    </ul>`;
+    return;
+  }
+  /* results */
+  const st = sxState, all = SX_BOOKS().map(b => ({ ...b, s: score(b, q) })).filter(b => b.s > 0);
+  st.src.forEach(r => { if (!all.some(b => b.t === r.t && b.a === r.a)) all.push({ ...r, s: Math.max(score(r, q), 50) }); else { const b = all.find(x => x.t === r.t && x.a === r.a); b.remote = r.remote; b.cover = b.cover || r.cover; } });
+  all.sort((a, b) => b.s - a.s || (b.hot || 0) - (a.hot || 0));
+  const authorHit = [...new Set(all.filter(b => b.a && b.a === q).map(b => b.a))][0] || [...new Set(all.filter(b => b.a && b.a.includes(q) && q.length >= 2).map(b => b.a))][0];
+  const list = st.tab === "author" ? all.filter(b => (b.a || "").includes(q)) : st.tab === "shelf" ? all.filter(b => b.own != null) : all;
+  const similar = !all.length ? SX_BOOKS().map(b => ({ ...b, f: fuzzy(b, q) })).filter(b => b.f >= .5).sort((a, b) => b.f - a.f).slice(0, 4) : [];
+  const searching = st.done < st.total;
+  const row = b => `<div class="sx-r">
+      <button class="sx-open" type="button" data-open="${esc(b.t)}" data-a="${esc(b.a || "")}">
+        <span class="sx-c">${b.cover ? `<img alt="" src="${esc(b.cover)}" loading="lazy" referrerpolicy="no-referrer">` : `<img alt="" src="${b.own != null ? coverOf(b.own).slice(5, -2) : recCover(b)}">`}</span>
+        <span class="sx-i"><b>${mark(b.t, q)}</b>
+          <small>${mark(b.a || "佚名", q)}${b.cat ? " · " + esc(b.cat) : ""}${b.words ? ` · ${b.words}万字` : ""}${b.status ? " · " + esc(b.status) : ""}</small>
+          ${b.syn ? `<span class="sx-syn">${esc(b.syn)}</span>` : ""}
+          <span class="sx-meta">${b.own != null ? `<i class="sx-tag own">书架</i>` : ""}${b.remote ? `<i class="sx-tag live">${esc(b.remote)}</i>` : b.own == null ? `<i class="sx-tag">演示数据</i>` : ""}${b.sc ? `<i class="sx-sc">${b.sc.toFixed(1)} 分</i>` : ""}</span></span></button>
+      ${b.own == null ? `<button class="want" type="button" data-want="${esc(b.t)}" aria-pressed="${wanted.has(b.t)}">${wanted.has(b.t) ? "✓ 已想读" : "＋ 想读"}</button>` : ""}</div>`;
+  sxBody.innerHTML = `
+    <div class="sx-tabs" role="tablist">${[["all", "综合"], ["shelf", "书架"], ["author", "作者"]].map(([k, l]) => `<button type="button" role="tab" aria-selected="${st.tab === k}" data-tab="${k}">${l}</button>`).join("")}
+      <span class="sx-stat">${searching ? `正在搜索 ${st.total} 个书库 · 已返回 ${st.done}` : st.total ? `${st.total} 个书库已返回` : "没有可联网搜索的书库"}</span></div>
+    <div class="sx-prog" aria-hidden="true"><i style="transform:scaleX(${st.total ? st.done / st.total : 1})"></i></div>
+    ${authorHit && st.tab !== "shelf" ? `<button class="sx-author" type="button" data-tab="author"><span class="sx-av">${esc(authorHit.slice(0, 1))}</span>
+      <span><b>${esc(authorHit)}</b><small>作者 · ${all.filter(b => b.a === authorHit).length} 部作品</small></span>${ico.user}</button>` : ""}
+    <div class="sx-list">${list.map(row).join("")}</div>
+    ${searching && !list.length ? `<div class="gsx-r gsx-sk"><span class="gsx-c"></span><span class="gsx-i"><i></i><i></i></span></div>`.repeat(3) : ""}
+    ${!searching && !list.length ? `<div class="sx-none"><b>没有找到「${esc(q)}」</b>
+      <span>${st.tab === "all" ? "已启用的书库里都没有这本书。可能还在版权期内、没有开放，或者书名有别的写法。" : "换到「综合」看看全部结果。"}</span>
+      ${st.tab === "all" ? `<button class="btn primary" type="button" data-ask="${esc(q)}">${sxAsk.includes(q) ? "已在求书清单" : "求书：有书库收录时提醒我"}</button>` : ""}</div>
+      ${similar.length ? `<div class="sx-h"><b>相似的书</b></div><div class="sx-list">${similar.map(row).join("")}</div>` : ""}` : ""}
+    ${!searching ? `<p class="gsx-note">${st.live ? `联网搜索了：${esc(st.live)}。` : ""}${st.fail.length ? `没有响应：${st.fail.map(esc).join("、")}。` : ""}书架和公版书目里的「演示数据」只用于预览。${st.skipped ? `另有 ${st.skipped} 个书源不支持按书名搜索（WebDAV、网页规则等），没有参与。` : ""}</p>` : ""}`;
+}
+
+/* ---------- real search: OPDS catalogues via OpenSearch ---------- */
+const OPDS_TPL = [
+  [/gutenberg\.org/i, "https://www.gutenberg.org/ebooks/search.opds/?query={searchTerms}"],
+  [/standardebooks\.org/i, "https://standardebooks.org/feeds/opds/all?query={searchTerms}"],
+  [/feedbooks\.com/i, "https://catalog.feedbooks.com/search.atom?query={searchTerms}"],
+  [/archive\.org/i, "https://archive.org/advancedsearch.php?q={searchTerms}&fl[]=identifier&fl[]=title&fl[]=creator&rows=20&output=json"]
+];
+const tplCache = new Map();
+async function getText(url, signal){ const r = await fetch(url, { signal }); if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); }
+async function opdsTemplate(root, signal){
+  if (tplCache.has(root)) return tplCache.get(root);
+  let tpl = (OPDS_TPL.find(([re]) => re.test(root)) || [])[1];
+  if (!tpl) {                                         // discover: <link rel="search"> in the catalogue root
+    const doc = new DOMParser().parseFromString(await getText(root, signal), "application/xml");
+    const link = [...doc.querySelectorAll("link")].find(l => /search/.test(l.getAttribute("rel") || ""));
+    if (!link) throw new Error("no search");
+    const href = new URL(link.getAttribute("href"), root).href;
+    if (/\{searchTerms\}/.test(href)) tpl = href;
+    else {
+      const osd = new DOMParser().parseFromString(await getText(href, signal), "application/xml");
+      const u = [...osd.querySelectorAll("Url")].find(x => /atom|opds/.test(x.getAttribute("type") || "")) || osd.querySelector("Url");
+      if (!u) throw new Error("no template");
+      tpl = new URL(u.getAttribute("template"), href).href;
+    }
+  }
+  tplCache.set(root, tpl); return tpl;
+}
+async function opdsSearch(src, q, signal){
+  const tpl = await opdsTemplate(src.url, signal);
+  const url = tpl.replace(/\{searchTerms\}/g, encodeURIComponent(q)).replace(/\{[^}]+\?\}/g, "").replace(/\{[^}]+\}/g, "");
+  const text = await getText(url, signal);
+  if (/archive\.org/.test(url)) {                    // Internet Archive answers in JSON
+    return (JSON.parse(text).response?.docs || []).map(d => ({ t: [].concat(d.title)[0], a: [].concat(d.creator || "")[0], cat: "公版",
+      cover: `https://archive.org/services/img/${d.identifier}`, remote: src.name })).filter(x => x.t);
+  }
+  const doc = new DOMParser().parseFromString(text, "application/xml");
+  return [...doc.querySelectorAll("entry")].map(e => {
+    const links = [...e.querySelectorAll("link")];
+    const img = links.find(l => /image|thumbnail/.test(l.getAttribute("rel") || ""));
+    const sum = (e.querySelector("summary, content")?.textContent || "").replace(/\s+/g, " ").trim();
+    return { t: e.querySelector("title")?.textContent.trim(), a: [...e.querySelectorAll("author > name")].map(n => n.textContent.trim()).join("、"),
+      cat: e.querySelector("category")?.getAttribute("label") || "OPDS", syn: sum.slice(0, 120),
+      cover: img ? new URL(img.getAttribute("href"), url).href : null, remote: src.name };
+  }).filter(x => x.t && !/^(next|previous|下一页|上一页)$/i.test(x.t));
+}
+function runSources(q){
+  const st = sxState, run = st.run, on = sources.filter(s => s.on);
+  const searchable = on.filter(s => s.type === "OPDS");
+  st.total = searchable.length; st.skipped = on.length - searchable.length; st.done = 0; st.fail = []; st.live = "";
+  const ok = [];
+  sxRender();
+  searchable.forEach(s => {
+    const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 10000);
+    opdsSearch(s, q, ctl.signal).then(list => {
+      if (run !== sxState.run) return;
+      st.src.push(...list.slice(0, 20)); ok.push(s.name);
+    }).catch(() => { if (run === sxState.run) st.fail.push(s.name); })
+      .finally(() => { clearTimeout(t); if (run !== sxState.run) return; st.done++; st.live = ok.join("、"); sxRender(); });
+  });
+}
+
+/* ---------- clicks ---------- */
+sxBody.addEventListener("click", e => {
+  const qb = e.target.closest("[data-q]"); if (qb) { doSearch(qb.dataset.q); return; }
+  const k = e.target.closest("[data-sx]")?.dataset.sx; if (k === "clear") { sxHist = []; saveHist(); sxRender(); return; }
+  const tb = e.target.closest("[data-tab]"); if (tb) { sxState.tab = tb.dataset.tab; sxRender(); return; }
+  const ask = e.target.closest("[data-ask]");
+  if (ask) { const t = ask.dataset.ask; if (!sxAsk.includes(t)) { sxAsk.unshift(t); saveHist(); snack(`已加入求书：《${t}》`, ICON_MARK_FILL, () => { sxAsk = sxAsk.filter(x => x !== t); saveHist(); sxRender(); }); } sxRender(); return; }
+  const op = e.target.closest("[data-open]"); if (!op) return;
+  const b = SX_BOOKS().find(x => x.t === op.dataset.open) || sxState.src.find(x => x.t === op.dataset.open && x.a === op.dataset.a);
+  if (b && b.own != null) { closeSearch(); openFrom(b.own); return; }
+  openDetail({ t: b.t, a: b.a || "佚名", cat: b.cat, bl: b.syn, sc: b.sc, cover: b.cover, src: b.remote || "公版书库" }, op.querySelector("img"));
+});
+addEventListener("keydown", e => { if (e.key === "Escape" && sxEl.classList.contains("on") && !det) { closeSearch(); e.stopImmediatePropagation(); } }, true);
+
 /* system back (Android app shell calls this): close the open book, else return to the shelf */
 window.__back = () => {
   if (tocPage.classList.contains("on")) { closeToc(); return true; }
   if (det && !reader.classList.contains("on")) { closeDetail(); return true; }
+  if (sxEl.classList.contains("on") && !reader.classList.contains("on")) { closeSearch(); return true; }
   if (reader.classList.contains("on")) { if (reader.classList.contains("chrome")) setChrome(false); else closeReader(); return true; }
   if (sel >= 0) { closeBook(); return true; }
   if (menuEl) { closeMenu(); return true; }

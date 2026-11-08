@@ -43,6 +43,11 @@ public class MainActivity extends Activity {
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);          // remembers theme and animation-speed choices
         s.setAllowFileAccess(true);
+        // the page is loaded from file://; these let its search reach online OPDS catalogues
+        // (Project Gutenberg, Standard Ebooks, a home Calibre server) that do not send CORS headers
+        s.setAllowFileAccessFromFileURLs(true);
+        s.setAllowUniversalAccessFromFileURLs(true);
+        s.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
         s.setTextZoom(100);                    // keep the designed type scale
         s.setMediaPlaybackRequiresUserGesture(true);
 
