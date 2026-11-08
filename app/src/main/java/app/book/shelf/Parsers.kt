@@ -72,6 +72,7 @@ import kotlin.coroutines.resume
  *
  * Images (pages and covers) are requested by the page as https://shelf-img.local/?s=SOURCE&u=ADDRESS and served
  * from [intercept] with that source's own headers, cookies and interceptor (some sites descramble pages there).
+ * Pictures of Legado-style comic sources come as https://shelf-img.local/?u=ADDRESS&h={headers as JSON}.
  */
 class Parsers(private val activity: Activity, private val main: WebView) {
 
@@ -350,6 +351,13 @@ class Parsers(private val activity: Activity, private val main: WebView) {
         return try {
             val rb = Request.Builder().url(target).get()
             if (source != null) rb.tag(MangaSource::class.java, source)
+            // pictures of Legado-style sources bring their own headers (Referer, User-Agent …) as JSON
+            u.getQueryParameter("h")?.let { raw ->
+                runCatching {
+                    val h = JSONObject(raw)
+                    for (k in h.keys()) rb.header(k, h.optString(k))
+                }
+            }
             http.newCall(rb.build()).execute().use { r ->
                 val bytes = r.body.bytes()
                 val mime = r.body.contentType()?.let { it.type + "/" + it.subtype } ?: "image/jpeg"

@@ -878,7 +878,9 @@ h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
 .sx-tabs button{height:40px;padding:0;border:0;background:none;font:inherit;font-size:14px;letter-spacing:.16em;color:var(--ink-2);cursor:pointer;position:relative}
 .sx-tabs button[aria-selected="true"]{color:var(--ink)}
 .sx-tabs button[aria-selected="true"]::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--ink)}
-.sx-stat{margin-left:auto;padding-bottom:10px;font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;color:var(--ink-2);white-space:nowrap}
+.sx-stat{margin-left:auto;padding-bottom:10px;font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;color:var(--ink-2);white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.sx-tabs button{white-space:nowrap;flex:none}
+@media (max-width:520px){ .sx-tabs{gap:14px} .sx-tabs button{letter-spacing:.06em} }
 .sx-prog{height:2px;margin-top:-22px;background:var(--ink-3);overflow:hidden}
 .sx-prog i{display:block;height:100%;background:var(--accent);transform-origin:0 50%;transition:transform .4s}
 .sx-author{display:flex;align-items:center;gap:14px;padding:12px 14px;border:0;border-radius:14px;background:var(--sheet);box-shadow:0 0 0 1px var(--edge);font:inherit;color:var(--ink);text-align:left;cursor:pointer}
@@ -3041,7 +3043,9 @@ function sxRender(){
   st.src.forEach(r => { if (!all.some(b => b.t === r.t && b.a === r.a)) all.push({ ...r, s: Math.max(score(r, q), 50) }); else { const b = all.find(x => x.t === r.t && x.a === r.a); b.remote = r.remote; b.cover = b.cover || r.cover; } });
   all.sort((a, b) => b.s - a.s || (b.hot || 0) - (a.hot || 0));
   const authorHit = [...new Set(all.filter(b => b.a && b.a === q).map(b => b.a))][0] || [...new Set(all.filter(b => b.a && b.a.includes(q) && q.length >= 2).map(b => b.a))][0];
-  const list = st.tab === "author" ? all.filter(b => (b.a || "").includes(q)) : st.tab === "shelf" ? all.filter(b => b.own != null) : all;
+  const list = st.tab === "author" ? all.filter(b => (b.a || "").includes(q)) : st.tab === "shelf" ? all.filter(b => b.own != null)
+    : st.tab === "novel" ? all.filter(b => !b.comic) : st.tab === "comic" ? all.filter(b => b.comic) : all;
+  const nComic = all.filter(b => b.comic).length;
   const similar = !all.length ? SX_BOOKS().map(b => ({ ...b, f: fuzzy(b, q) })).filter(b => b.f >= .5).sort((a, b) => b.f - a.f).slice(0, 4) : [];
   const searching = st.done < st.total;
   const row = b => `<div class="sx-r">
@@ -3053,7 +3057,7 @@ function sxRender(){
           <span class="sx-meta">${b.own != null ? `<i class="sx-tag own">书架</i>` : ""}${b.remote ? `<i class="sx-tag live">${esc(b.remote)}</i>` : b.own == null ? `<i class="sx-tag">演示数据</i>` : ""}${b.sc ? `<i class="sx-sc">${b.sc.toFixed(1)} 分</i>` : ""}</span></span></button>
       ${b.own == null ? `<button class="want" type="button" data-want="${esc(b.t)}" aria-pressed="${wanted.has(b.t)}">${wanted.has(b.t) ? "✓ 已想读" : "＋ 想读"}</button>` : ""}</div>`;
   sxBody.innerHTML = `
-    <div class="sx-tabs" role="tablist">${[["all", "综合"], ["shelf", "书架"], ["author", "作者"]].map(([k, l]) => `<button type="button" role="tab" aria-selected="${st.tab === k}" data-tab="${k}">${l}</button>`).join("")}
+    <div class="sx-tabs" role="tablist">${[["all", "综合"], ["novel", "小说"], ["comic", nComic ? `漫画 ${nComic}` : "漫画"], ["shelf", "书架"], ["author", "作者"]].map(([k, l]) => `<button type="button" role="tab" aria-selected="${st.tab === k}" data-tab="${k}">${l}</button>`).join("")}
       <span class="sx-stat">${searching ? `正在搜索 ${st.total} 个书库 · 已返回 ${st.done}` : st.total ? `${st.total} 个书库已返回` : "没有可联网搜索的书库"}</span></div>
     <div class="sx-prog" aria-hidden="true"><i style="transform:scaleX(${st.total ? st.done / st.total : 1})"></i></div>
     ${authorHit && st.tab !== "shelf" ? `<button class="sx-author" type="button" data-tab="author"><span class="sx-av">${esc(authorHit.slice(0, 1))}</span>
@@ -3141,6 +3145,9 @@ function gbkEncode(s){
   return [...s].map(c => c.charCodeAt(0) < 128 ? encodeURIComponent(c) : gbkTable.get(c) || encodeURIComponent(c)).join("");
 }
 const lgVars = new Map();
+/* @put / @get values belong to one book (Legado keeps them on the book): swap them in and out around each book's rules */
+function lgUseVars(vars){ for (const k of [...lgVars.keys()]) if (!k.startsWith("cache:")) lgVars.delete(k); for (const [k, v] of Object.entries(vars || {})) lgVars.set(k, v); }
+const lgKeepVars = () => Object.fromEntries([...lgVars].filter(([k]) => !k.startsWith("cache:")));
 const lgJava = {
   encodeURI: (s, cs) => /gb/i.test(cs || "") ? gbkEncode(String(s)) : encodeURIComponent(String(s)),
   base64Encode: s => { try { return btoa(unescape(encodeURIComponent(String(s)))); } catch (_) { return ""; } },
@@ -3182,7 +3189,8 @@ const lgCache = { get: k => lgVars.get("cache:" + k) ?? null, put: (k, v) => lgV
 function lgJs(code, env){
   const ctx = env.item ?? env.result;
   /* {{$.rule}} inside JS is filled in from the item first, as Legado does */
-  code = String(code).replace(/\{\{([\s\S]*?)\}\}/g, (m, e) => lgRuleLike(e.trim()) ? lgStrPart(ctx, e.trim(), env) : m);
+  code = String(code).replace(/\{\{([\s\S]*?)\}\}/g, (m, e) => lgRuleLike(e.trim()) ? lgStrPart(ctx, e.trim(), env) : m)
+    .replace(/@get:\{([^}]*)\}/gi, (_, k) => String(lgVars.get(k.trim()) ?? ""));
   /* java.getString / getStringList read a rule against the item being parsed */
   const java = { ...lgJava, getString: r => lgStr(ctx, String(r), env), getStringList: r => lgStr(ctx, String(r), env).split("\n").filter(Boolean),
     getElement: r => lgList(ctx, String(r), env)[0], getElements: r => lgList(ctx, String(r), env),
@@ -3492,11 +3500,13 @@ async function legadoSearch(src, q, signal){
   const abs = v => { v = String(v || "").split(/,\s*\{/)[0].trim(); if (!v || /^(data:|javascript:)/i.test(v) && !/^data:image/i.test(v)) return null; try { return new URL(v, res.url).href; } catch (_) { return null; } };
   const one = v => String(v || "").replace(/\s+/g, " ").trim();
   const list = items.slice(0, 30).map(it => {
+    lgUseVars({});
     const e = { ...env, item: it };
     const g = k => { if (!s.rule[k]) return ""; try { return lgStr(it, s.rule[k], e); } catch (_) { return ""; } };
-    return { t: one(g("name")), a: one(g("author")).replace(/^(作\s*者)\s*[:：]\s*/, ""), cat: one(g("kind").split(/[\n,，|]/)[0]) || (src.group || "").split(/\s/)[0] || "小说",
-      syn: one(g("intro")).slice(0, 120), cover: abs(g("coverUrl")), url: abs(g("bookUrl")) || res.url, last: one(g("lastChapter")), remote: src.name,
-      sid: src.id, burl: lgFirst(g("bookUrl")) || res.url, base: res.url, words: one(g("wordCount")) };
+    const comic = src.type === "漫画";
+    return { t: one(g("name")), a: one(g("author")).replace(/^(作\s*者)\s*[:：]\s*/, ""), cat: one(g("kind").split(/[\n,，|]/)[0]) || (comic ? "漫画" : (src.group || "").split(/\s/)[0] || "小说"),
+      syn: one(g("intro")).slice(0, 120), cover: comic ? lgImg(g("coverUrl"), res.url, src) : abs(g("coverUrl")), comic, url: abs(g("bookUrl")) || res.url, last: one(g("lastChapter")), remote: src.name,
+      sid: src.id, burl: lgFirst(g("bookUrl")) || res.url, base: res.url, words: one(g("wordCount")), vars: lgKeepVars() };
   }).filter(b => b.t);
   /* what came back, so an empty result can say why */
   list.diag = { url: req.url, head: res.text.replace(/\s+/g, " ").trim().slice(0, 240), kind: root instanceof Node ? "网页" : root && typeof root === "object" ? "JSON" : "文本",
@@ -3520,7 +3530,7 @@ function ktCall(method, args, signal){
 const ktImg = (src, u) => u ? "https://shelf-img.local/?s=" + encodeURIComponent(src) + "&u=" + encodeURIComponent(u) : null;
 async function ktSearch(s, q, signal){
   const list = await ktCall("search", { source: s.kt, q }, signal);
-  return list.map(m => ({ t: m.title, a: m.author, cat: (m.tags || [])[0] || "漫画", syn: lgPlain(m.intro || "").slice(0, 120), cover: ktImg(s.kt, m.cover),
+  return list.map(m => ({ t: m.title, a: m.author, comic: true, cat: (m.tags || [])[0] || "漫画", syn: lgPlain(m.intro || "").slice(0, 120), cover: ktImg(s.kt, m.cover),
     remote: s.name, sid: s.id, kt: m.key, burl: m.url }));
 }
 async function ktLoadBook(b){
@@ -3549,6 +3559,23 @@ function importKotatsu(){
   });
   closeSheet(); addSources(list);
 }
+/* a picture address from a rule: "url,{headers}" → proxied through the shell with Referer + the source's headers */
+function lgImg(raw, base, src){
+  raw = lgFirst(raw); if (!raw) return null;
+  let u = raw, opt = {};
+  const m = raw.match(/^(.*?),\s*(\{[\s\S]*\})\s*$/);
+  if (m) { try { opt = lenientJSON(m[2]) || {}; u = m[1]; } catch (_) {} }
+  if (/^data:image/i.test(u)) return u;
+  try { u = new URL(u.trim(), base).href; } catch (_) { return null; }
+  if (!KT()) return u;   // browser preview: the plain address
+  let h = {};
+  try { const sh = src?.search?.header; if (sh && !/^(@js:|<js>)/i.test(sh.trim())) h = lenientJSON(sh) || {}; } catch (_) {}
+  let oh = opt.headers; if (typeof oh === "string") { try { oh = lenientJSON(oh); } catch (_) { oh = {}; } }
+  h = { Referer: base, ...h, ...(oh || {}) };
+  return "https://shelf-img.local/?u=" + encodeURIComponent(u) + "&h=" + encodeURIComponent(JSON.stringify(h));
+}
+/* Legado's own pattern for <img src="url,{options}"> in chapter html */
+const LG_IMG = /<img[^>]*?\s(?:src|data-original|data-src)=['"]([^'"]*(?:['"][^>]+\})?)['"][^>]*>/gi;
 /* ---------- reading a book from a Legado source: 详情 → 目录 → 正文 ---------- */
 const lgSrcOf = b => sources.find(s => s.id === b.lg.sid);
 const lgOneLine = v => String(v || "").replace(/\s+/g, " ").trim();
@@ -3562,7 +3589,9 @@ function lgLoadBook(b){
     const src = lgSrcOf(b); lgNeed(src, "toc");
     const S = src.search, R = S.info || {}, T = S.toc, envB = { source: lgSource(src), book: lgBookVar(b) };
     /* 详情 */
+    lgUseVars(b.lg.vars);
     const page = await lgGet(src, b.lg.bookUrl, b.lg.base || src.url, envB);
+    lgUseVars(b.lg.vars);
     const env = { ...envB, baseUrl: page.url };
     let ctx = page.text;
     if (R.init) { const got = lgList(ctx, R.init, env); ctx = got.length ? got[0] : lgCtx(ctx); } else ctx = lgCtx(ctx);
@@ -3570,14 +3599,16 @@ function lgLoadBook(b){
     const intro = lgPlain(g("intro")).replace(/[\u200e\u200f]/g, "");
     if (intro) b.syn = intro;
     const au = lgOneLine(g("author")); if (au) b.author = au;
-    const cover = lgAbs(g("coverUrl"), page.url); if (cover) b.cover = cover;
+    const cover = src.type === "漫画" ? lgImg(g("coverUrl"), page.url, src) : lgAbs(g("coverUrl"), page.url); if (cover) b.cover = cover;
     const kind = g("kind").split(/[\n,，|]/).map(lgOneLine).filter(Boolean); if (kind.length) { b.cat = kind[0]; b.kinds = kind.slice(0, 4); }
     const wc = lgOneLine(g("wordCount")) || kind.find(x => /^[\d.]+\s*万/.test(x)) || "", wn = parseFloat(wc);
     if (wn) b.words = /万/.test(wc) ? wn.toFixed(1) : (wn / 10000).toFixed(1);
     const last = lgOneLine(g("lastChapter")); if (last) b.last = last;
     const tocRaw = R.tocUrl ? lgFirst(g("tocUrl")) : "";
+    b.lg.vars = lgKeepVars();
     /* 目录 (follows nextTocUrl for a few pages) */
     let tpage = tocRaw && lgAbs(tocRaw, page.url) !== page.url ? await lgGet(src, tocRaw, page.url, envB) : page;
+    lgUseVars(b.lg.vars);
     const list = [], seen = new Set([tpage.url]), rev = /^\s*-/.test(T.chapterList), listRule = T.chapterList.replace(/^\s*[-+]/, "");
     const withJs = r => /<js>|@js:/i.test(r || "");
     let vol = "";
@@ -3594,10 +3625,11 @@ function lgLoadBook(b){
       const next = T.nextTocUrl ? lgStr(withJs(T.nextTocUrl) ? tpage.text : lgCtx(tpage.text), T.nextTocUrl, tenv).split("\n").map(x => x.trim()).find(u => u && !seen.has(lgAbs(u, tpage.url))) : "";
       if (!next) break;
       seen.add(lgAbs(next, tpage.url)); tpage = await lgGet(src, next, tpage.url, envB);
+      lgUseVars(b.lg.vars);
     }
     if (!list.length) throw new Error("目录是空的：书源的目录规则没解析出章节");
     if (rev) list.reverse();   // "-" reverses the whole list, after all pages, as in Legado
-    b.lg.toc = list; b.chapters = list.length; b.reading = Math.min(b.reading || 1, list.length);
+    b.lg.toc = list; b.lg.comic = src.type === "漫画"; b.chapters = list.length; b.reading = Math.min(b.reading || 1, list.length);
     b.status = b.kinds?.find(x => /完|连载|更新/.test(x)) || b.status || "连载";
     return b;
   })().finally(() => { b.lg.loading = null; }));
@@ -3620,18 +3652,30 @@ async function lgChapter(b, n){
     return "";
   }
   const src = lgSrcOf(b); lgNeed(src, "content");
-  const C = src.search.content, parts = [], seen = new Set();
+  const C = src.search.content, parts = [], seen = new Set(), imgs = [];
   let url = ch.url, base = ch.base;
   for (let k = 0; k < 10 && url; k++) {
     const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), window.ShelfNative?.request ? 45000 : 20000);
     const page = await lgGet(src, url, base, { source: lgSource(src), book: lgBookVar(b), chapter: { title: ch.name, url: ch.url, index: n - 1 } }, ctl.signal).finally(() => clearTimeout(t));
     seen.add(page.url);
+    lgUseVars(b.lg.vars);
     const env = { source: lgSource(src), baseUrl: page.url, book: lgBookVar(b), chapter: { title: ch.name, url: ch.url, index: n - 1 } };
     let body = /<js>|@js:/i.test(C.content) ? page.text : lgCtx(page.text);
-    parts.push(lgStr(body, C.content, env));
+    let got = lgStr(body, C.content, env);
+    parts.push(got);
+    if (src.type === "漫画") {
+      if (C.replaceRegex) { const [, re, rp = ""] = lgSplit(C.replaceRegex.trim().replace(/^(?!##)/, "##"), "##"); if (re) got = lgReplace(String(got), re, rp, false); }
+      String(got).replace(LG_IMG, (_, u) => { imgs.push(lgImg(u, page.url, src)); return ""; });
+    }
     const nx = C.nextContentUrl ? lgFirst(lgStr(/<js>|@js:/i.test(C.nextContentUrl) ? page.text : lgCtx(page.text), C.nextContentUrl, env)) : "";
     const nextCh = b.lg.toc[n];
     url = nx && !seen.has(lgAbs(nx, page.url)) && !(nextCh && lgAbs(nx, page.url) === lgAbs(nextCh.url, nextCh.base)) ? nx : ""; base = page.url;
+  }
+  if (src.type === "漫画") {   // a picture source: the chapter is its images
+    const pages = imgs.filter(Boolean);
+    if (!pages.length) throw new Error("这一话没有解析出图片");
+    ch.pages = pages; ch.text = ""; b.lg.comic = true;
+    return "";
   }
   let text = lgPlain(parts.join("\n"));
   if (C.replaceRegex) { const [, re, rp = ""] = lgSplit(C.replaceRegex.trim().replace(/^(?!##)/, "##"), "##"); if (re) text = lgReplace(text, re, rp, false); }
@@ -3670,7 +3714,7 @@ sxBody.addEventListener("click", e => {
   const b = SX_BOOKS().find(x => x.t === op.dataset.open) || sxState.src.find(x => x.t === op.dataset.open && x.a === op.dataset.a);
   if (b && b.own != null) { closeSearch(); openFrom(b.own); return; }
   openDetail({ t: b.t, a: b.a || "佚名", cat: b.cat, bl: b.syn, sc: b.sc, cover: b.cover, src: b.remote || "公版书库", words: b.words,
-    lg: b.sid ? { sid: b.sid, bookUrl: b.burl, base: b.base, kt: b.kt } : null }, op.querySelector("img"));
+    lg: b.sid ? { sid: b.sid, bookUrl: b.burl, base: b.base, kt: b.kt, vars: b.vars } : null }, op.querySelector("img"));
 });
 addEventListener("keydown", e => { if (e.key === "Escape" && sxEl.classList.contains("on") && !det) { closeSearch(); e.stopImmediatePropagation(); } }, true);
 
