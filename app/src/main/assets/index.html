@@ -465,6 +465,10 @@ h1{font-size:21px;font-weight:500;letter-spacing:.18em;margin:10px 0 0}
 .urlform textarea:focus{box-shadow:inset 0 0 0 1.5px var(--ink)}
 .urlform .err{min-height:16px;font-size:12px;color:#b5452f;letter-spacing:.06em}
 .urlform .acts{gap:10px}
+.urlform .err ul.imp-why{margin:6px 0;padding-left:18px;color:var(--ink-2)}
+.urlform .err ul.imp-why b{color:#b5452f;font-weight:500}
+.urlform .err code{font-family:var(--f-mono);font-size:10.5px;color:var(--ink-2);word-break:break-all}
+
 @media (min-width:600px){ .sub-in{--gut:clamp(36px,5vw,64px)} .sub-top .ttl b{font-size:28px} }
 
 /* ---------- 书库 · 书源推荐 ---------- */
@@ -1945,11 +1949,37 @@ addSheet.addEventListener("click", e => {
 });
 function guessType(u){ return /opds|\.atom|feed/i.test(u) ? "OPDS" : /dav/i.test(u) ? "WebDAV" : "网页"; }
 const LEGADO_TYPE = { 0: "小说", 1: "音频", 2: "漫画", 3: "文件" };
-/* a Legado-style source file: an array (or one object) of { bookSourceName, bookSourceUrl, bookSourceType, … } */
+/* JSON as Legado reads it: tolerant of comments, trailing commas and raw line breaks inside strings */
+function lenientJSON(text){
+  text = text.replace(/^﻿/, "");
+  try { return JSON.parse(text); } catch (_) {}
+  let out = "", inStr = false, esc = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inStr) {
+      if (esc) { out += c; esc = false; continue; }
+      if (c === "\\") { out += c; esc = true; continue; }
+      if (c === '"') { inStr = false; out += c; continue; }
+      const code = c.charCodeAt(0);
+      out += c === "\n" ? "\\n" : c === "\r" ? "\\r" : c === "\t" ? "\\t" : code < 32 ? "\\u" + code.toString(16).padStart(4, "0") : c;
+      continue;
+    }
+    if (c === '"') { inStr = true; out += c; continue; }
+    if (c === "/" && text[i + 1] === "/") { while (i < text.length && text[i] !== "\n") i++; continue; }
+    if (c === "/" && text[i + 1] === "*") { const j = text.indexOf("*/", i + 2); i = j < 0 ? text.length : j + 1; continue; }
+    if (c === ",") { const m = /^\s*[}\]]/.exec(text.slice(i + 1, i + 200)); if (m) continue; }
+    out += c;
+  }
+  return JSON.parse(out);
+}
+/* a Legado-style source file: an array (or one object) of { bookSourceName, bookSourceUrl, bookSourceType, … }
+   returns { list } or { why: "html" | "json" | "empty", head } */
 function parseSourceFile(text){
-  let data; try { data = JSON.parse(text.replace(/^﻿/, "")); } catch (_) { return null; }
+  const t = String(text).replace(/^﻿/, "").trim(), head = t.slice(0, 60).replace(/\s+/g, " ");
+  if (/^<(!doctype|html|head|body|\?xml)/i.test(t) || /^</.test(t)) return { why: "html", head };
+  let data; try { data = lenientJSON(t); } catch (_) { return { why: "json", head }; }
   if (data && !Array.isArray(data) && Array.isArray(data.sources)) data = data.sources;
-  return (Array.isArray(data) ? data : [data]).filter(o => o && typeof o === "object").map(o => ({
+  const list = (Array.isArray(data) ? data : [data]).filter(o => o && typeof o === "object").map(o => ({
     name: o.bookSourceName || o.sourceName || o.name || o.title,
     url: o.bookSourceUrl || o.sourceUrl || o.url,
     type: o.bookSourceType in LEGADO_TYPE ? LEGADO_TYPE[o.bookSourceType] : (o.ruleSearch || o.searchUrl ? "小说" : undefined),
@@ -1957,40 +1987,51 @@ function parseSourceFile(text){
     on: o.enabled !== false,
     note: o.bookSourceComment || ""
   })).filter(o => o.url);
+  return list.length ? { list } : { why: "empty", head };
 }
-/* GitHub page links point at an HTML page; the file itself lives on raw.githubusercontent.com */
-function rawUrl(u){
-  const m = u.match(/^https?:\/\/github\.com\/([^/]+)\/([^/]+)\/(?:blob|raw)\/(.+)$/i);
-  if (m) return `https://raw.githubusercontent.com/${m[1]}/${m[2]}/${m[3]}`;
-  const g = u.match(/^https?:\/\/gist\.github\.com\/([^/]+)\/([0-9a-f]+)\/?$/i);
-  if (g) return `https://gist.githubusercontent.com/${g[1]}/${g[2]}/raw`;
-  return u;
-}
-async function importLinks(lines, btn, err){
-  const all = []; let failed = [];
-  for (const [k, u] of lines.entries()) {
-    btn.textContent = lines.length > 1 ? `下载中 ${k + 1}/${lines.length}…` : "下载中…";
-    const looksLikeFile = /\.(json|txt)(\?|#|$)/i.test(u) || /github(usercontent)?\.com|gist\./i.test(u);
-    try {
-      const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 12000);
-      const res = await fetch(rawUrl(u), { signal: ctl.signal }); clearTimeout(t);
-      if (!res.ok) throw new Error("HTTP " + res.status);
-      btn.textContent = "解析中…";
-      const list = parseSourceFile(await res.text());
-      if (list && list.length) { all.push(...list); continue; }
-      if (looksLikeFile) { failed.push([u, "文件里没有找到书源"]); continue; }
-      all.push({ name: hostOf(u).replace(/^www\./, ""), url: u });        // a plain site or catalogue address
-    } catch (e) {
-      if (!looksLikeFile) { all.push({ name: hostOf(u).replace(/^www\./, ""), url: u }); continue; }
-      failed.push([u, e.name === "AbortError" ? "下载超时" : "下载失败"]);
-    }
+/* GitHub page links point at an HTML page; the file itself lives on raw.githubusercontent.com,
+   and jsDelivr mirrors the same file where GitHub is hard to reach */
+function fileUrls(u){
+  const m = u.match(/^https?:\/\/(?:github\.com\/([^/]+)\/([^/]+)\/(?:blob|raw)\/([^/]+)\/(.+)|raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/([^/]+)\/(.+))$/i);
+  if (m) {
+    const [o, r, br, path] = m[1] ? [m[1], m[2], m[3], m[4]] : [m[5], m[6], m[7], m[8]];
+    return [["GitHub 原始文件", `https://raw.githubusercontent.com/${o}/${r}/${br}/${path}`], ["jsDelivr 镜像", `https://cdn.jsdelivr.net/gh/${o}/${r}@${br}/${path}`]];
   }
-  if (failed.length && !all.length) {
+  const g = u.match(/^https?:\/\/gist\.github\.com\/([^/]+)\/([0-9a-f]+)\/?$/i);
+  if (g) return [["Gist", `https://gist.githubusercontent.com/${g[1]}/${g[2]}/raw`]];
+  return [["链接", u]];
+}
+const IN_APP = /\bwv\b|; wv\)/.test(navigator.userAgent) || location.protocol === "file:";
+async function importLinks(lines, btn, err){
+  const all = [], problems = [];
+  for (const [k, u] of lines.entries()) {
+    const isFile = /\.(json|txt)(\?|#|$)/i.test(u) || /github(usercontent)?\.com|gist\./i.test(u);
+    let got = null, tried = [];
+    for (const [label, url] of fileUrls(u)) {
+      btn.textContent = `${lines.length > 1 ? `${k + 1}/${lines.length} · ` : ""}${label}…`;
+      try {
+        const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 12000);
+        const res = await fetch(url, { signal: ctl.signal }); clearTimeout(t);
+        if (!res.ok) { tried.push([label, `HTTP ${res.status}`]); continue; }
+        const r = parseSourceFile(await res.text());
+        if (r.list) { got = r.list; break; }
+        tried.push([label, r.why, r.head]);
+      } catch (e) { tried.push([label, e.name === "AbortError" ? "超时" : "连不上"]); }
+    }
+    if (got) { all.push(...got); continue; }
+    if (!isFile) { all.push({ name: hostOf(u).replace(/^www\./, ""), url: u }); continue; }   // a plain site or catalogue address
+    problems.push([u, tried]);
+  }
+  if (problems.length && !all.length) {
     btn.disabled = false; btn.textContent = "重试";
-    err.innerHTML = `${failed[0][1]}：没能下载这个书源文件。<br>网页预览里不能联网，安装版可以直接导入；也可以先把文件存到手机，再用「本地导入」。`;
+    const WHY = { html: "下载到的是一个网页，不是书源文件（链接可能被网络拦截，或需要登录）", json: "下载到了，但内容不是能识别的书源 JSON",
+      empty: "文件能读取，但里面没有书源（缺少 bookSourceUrl）" };
+    const rows = problems[0][1].map(([label, why, head]) =>
+      `<li><b>${esc(label)}</b>：${esc(WHY[why] || why)}${head ? `<br><code>开头：${esc(head)}${head.length >= 60 ? "…" : ""}</code>` : ""}</li>`).join("");
+    err.innerHTML = `没能导入这个书源文件，已尝试：<ul class="imp-why">${rows}</ul>${IN_APP ? "可以换一个链接，或先把文件存到手机，再用「本地导入」。" : "网页预览里不能联网，安装版可以直接导入；也可以先把文件存到手机，再用「本地导入」。"}`;
     return;
   }
-  closeSheet(); addSources(all, failed.length);
+  closeSheet(); addSources(all, problems.length);
 }
 function addSources(list, failedFiles = 0){
   const t = Date.now(), fresh = [];
@@ -2015,9 +2056,9 @@ document.getElementById("srcFile").addEventListener("change", e => {
   const f = e.target.files[0]; e.target.value = ""; if (!f) return;
   const rd = new FileReader();
   rd.onload = () => {
-    const arr = parseSourceFile(String(rd.result));
-    if (!arr) { toast("文件不是有效的书源 JSON"); return; }
-    if (!arr.length) { toast("文件里没有找到书源"); return; }
+    const r = parseSourceFile(String(rd.result));
+    if (!r.list) { toast(r.why === "empty" ? "文件里没有找到书源" : r.why === "html" ? "这是一个网页文件，不是书源 JSON" : "文件不是能识别的书源 JSON"); return; }
+    const arr = r.list;
     closeSheet(); addSources(arr);
   };
   rd.onerror = () => toast("读取文件失败");
