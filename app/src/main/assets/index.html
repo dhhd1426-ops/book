@@ -3319,11 +3319,16 @@ function jsonPath(obj, path){
   return cur.filter(v => v !== undefined && v !== null);
 }
 /* turn whatever a step produced into something the next rule can read */
+const lgCtxMemo = new Map();   // a page's text is read by several rules in turn: parse it once
 function lgCtx(cur){
   if (cur instanceof Node || cur == null || typeof cur !== "string") return cur;
+  if (lgCtxMemo.has(cur)) return lgCtxMemo.get(cur);
   const t = cur.trim();
-  if (/^[[{]/.test(t)) { try { return JSON.parse(t); } catch (_) {} }
-  return new DOMParser().parseFromString(cur, "text/html");
+  let out = null;
+  if (/^[[{]/.test(t)) { try { out = JSON.parse(t); } catch (_) {} }
+  if (out == null) out = new DOMParser().parseFromString(cur, "text/html");
+  if (cur.length > 200) { if (lgCtxMemo.size >= 6) lgCtxMemo.delete(lgCtxMemo.keys().next().value); lgCtxMemo.set(cur, out); }
+  return out;
 }
 /* index part of a Default-syntax step: old ".0:2" / "!0" or new "[0,2]" "[1:3]" "[!0]" */
 function lgPickIdx(list, spec, excl, ranged){
@@ -3653,7 +3658,7 @@ async function lgFetch(req, signal){
 async function legadoSearch(src, q, signal){
   const s = src.search, req = lgRequest(src, q);
   const res = await (req.webView && window.ShelfNative?.render ? lgRender(req, signal) : lgFetch(req, signal)).catch(e => { throw Object.assign(e, { url: req.url }); });
-  const env = { key: q, page: 1, baseUrl: res.url, source: lgSource(src) };
+  const env = { key: q, page: 1, baseUrl: res.url, source: lgSource(src), src: res.text };
   const root = lgCtx(res.text);
   let items = [], err = "";
   try { items = lgList(/<js>|@js:/i.test(s.rule.bookList) ? res.text : root, s.rule.bookList, env); } catch (e) { err = whyFail(e); }
@@ -3752,9 +3757,9 @@ function lgLoadBook(b){
     lgUseVars(b.lg.vars);
     const page = await lgGet(src, b.lg.bookUrl, b.lg.base || src.url, envB);
     lgUseVars(b.lg.vars);
-    const env = { ...envB, baseUrl: page.url };
+    const env = { ...envB, baseUrl: page.url, src: page.text };
     let ctx = page.text;
-    if (R.init) { const got = lgList(ctx, R.init, env); ctx = got.length ? got[0] : lgCtx(ctx); } else ctx = lgCtx(ctx);
+    if (R.init) { const got = lgList(ctx, R.init, env); if (got.length) ctx = got[0]; }
     const g = k => { if (!R[k]) return ""; try { return lgStr(ctx, R[k], { ...env, item: ctx }); } catch (_) { return ""; } };
     const intro = lgPlain(g("intro")).replace(/[\u200e\u200f]/g, "");
     if (intro) b.syn = intro;
@@ -3773,7 +3778,7 @@ function lgLoadBook(b){
     const withJs = r => /<js>|@js:/i.test(r || "");
     let vol = "";
     for (let k = 0; k < 100 && tpage; k++) {
-      const tenv = { ...envB, baseUrl: tpage.url };
+      const tenv = { ...envB, baseUrl: tpage.url, src: tpage.text };
       if (T.preUpdateJs && !k) try { lgJs(T.preUpdateJs.replace(/^@js:|^<js>|<\/js>$/gi, ""), { ...tenv, result: tpage.text }); } catch (_) {}
       for (const it of lgList(withJs(listRule) ? tpage.text : lgCtx(tpage.text), listRule, tenv)) {
         const e = { ...tenv, item: it }, r = rule => { if (!rule) return ""; try { return lgStr(it, rule, e); } catch (_) { return ""; } };
@@ -3794,7 +3799,7 @@ function lgLoadBook(b){
     return b;
   })().finally(() => { b.lg.loading = null; }));
 }
-const lgBookVar = b => ({ name: b.title, author: b.author, bookUrl: b.lg.bookUrl, tocUrl: "", origin: b.lg.sid, getVariable: () => "", putVariable: () => {} });
+const lgBookVar = b => ({ name: b.title, author: b.author, bookUrl: b.lg.bookUrl, tocUrl: "", origin: lgSrcOf(b)?.url || "", originName: b.code, getVariable: () => "", putVariable: () => {} });
 /* chapter html → plain paragraphs */
 function lgPlain(html){
   const box = document.createElement("div");
@@ -3819,7 +3824,7 @@ async function lgChapter(b, n){
     const page = await lgGet(src, url, base, { source: lgSource(src), book: lgBookVar(b), chapter: { title: ch.name, url: ch.url, index: n - 1 } }, ctl.signal).finally(() => clearTimeout(t));
     seen.add(page.url);
     lgUseVars(b.lg.vars);
-    const env = { source: lgSource(src), baseUrl: page.url, book: lgBookVar(b), chapter: { title: ch.name, url: ch.url, index: n - 1 } };
+    const env = { source: lgSource(src), baseUrl: page.url, src: page.text, book: lgBookVar(b), chapter: { title: ch.name, url: ch.url, index: n - 1 } };
     let body = /<js>|@js:/i.test(C.content) ? page.text : lgCtx(page.text);
     let got = lgStr(body, C.content, env);
     parts.push(got);
