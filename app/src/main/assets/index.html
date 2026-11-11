@@ -3223,7 +3223,8 @@ function lgJs(code, env){
     .replace(/@get:\{([^}]*)\}/gi, (_, k) => String(lgVars.get(k.trim()) ?? ""));
   /* java.getString / getStringList read a rule against the item being parsed */
   const java = { ...lgJava, getString: r => lgStr(ctx, String(r), env), getStringList: r => lgStr(ctx, String(r), env).split("\n").filter(Boolean),
-    getElement: r => lgList(ctx, String(r), env)[0], getElements: r => lgList(ctx, String(r), env),
+    getElement: r => { const l = lgList(ctx, String(r), env); return l[0] instanceof Node || !l.length ? l : l[0]; }, getElements: r => lgList(ctx, String(r), env),
+    setContent: () => {}, getCookie: () => "", getVerificationCode: () => "",
     ajax: u => lgAjax(Array.isArray(u) ? u[0] : u, env), connect: u => { const t = lgAjax(u, env); return { body: () => t, toString: () => t }; },
     post: (u, body, h) => { const t = lgAjax(u + "," + JSON.stringify({ method: "POST", body, headers: h || {} }), env); return { body: () => t }; },
     get: (k, h) => h === undefined ? lgJava.get(k) : { body: () => lgAjax(k + "," + JSON.stringify({ headers: h }), env) } };
@@ -3471,11 +3472,27 @@ function lgTemplates(str, fn){
   return out;
 }
 /* any Legado address: url,{"method","body","charset","headers","webView","webJs","type"} — q is the search word, if any */
+/* options / headers as sources write them: JSON, or a JS object literal with single quotes ({'method':'POST'}) */
+function lgOpts(text){
+  text = String(text).trim();
+  try { const o = lenientJSON(text); if (o && typeof o === "object") return o; } catch (_) {}
+  if (!/^\{[\s\S]*\}$/.test(text)) throw new Error("not an object");
+  const o = new Function("return (" + text + ")")();
+  if (!o || typeof o !== "object") throw new Error("not an object");
+  return o;
+}
 function lgBuildReq(src, raw, base, env, q){
   env = { page: 1, source: src ? lgSource(src) : {}, ...env, baseUrl: base };
   raw = String(raw).trim(); let opts = {};
-  if (/^@js:/i.test(raw)) raw = String(lgJs(raw.slice(4), env));
-  else if (/^<js>[\s\S]*<\/js>$/i.test(raw)) raw = String(lgJs(raw.slice(4, -5), env));
+  /* as Legado's AnalyzeUrl: text and <js> / @js: pieces in turn — JS sees the address so far as result, text may use @result */
+  if (/<js>|@js:/i.test(raw)) {
+    let cur = raw;
+    for (const part of lgParts(raw)) {
+      if (part.js != null) { const v = lgJs(part.js, { ...env, result: cur }); if (v != null) cur = String(v); }
+      else if (part.rule) cur = part.rule.replace("@result", cur);
+    }
+    raw = cur.trim();
+  }
   /* every {{…}} is worked out before the address and its options are told apart; the search word waits for the charset */
   const KEYMARK = "\u0001KEY\u0001";
   raw = lgTemplates(raw, e => {
@@ -3487,7 +3504,7 @@ function lgBuildReq(src, raw, base, env, q){
   for (let i = raw.indexOf(","); i >= 0; i = raw.indexOf(",", i + 1)) {
     const tail = raw.slice(i + 1).trim();
     if (!tail.startsWith("{") || tail.startsWith("{{")) continue;
-    try { const o = lenientJSON(tail); if (o && typeof o === "object") { opts = o; raw = raw.slice(0, i).trim(); break; } } catch (_) {}
+    try { opts = lgOpts(tail); raw = raw.slice(0, i).trim(); break; } catch (_) {}
   }
   /* 阅读 2.x: url|char=gbk, url@body means POST, searchKey / searchPage */
   let charset = opts.charset || "", method = String(opts.method || "GET").toUpperCase(), body = opts.body;
@@ -3516,7 +3533,7 @@ function lgBuildReq(src, raw, base, env, q){
   try {
     let h = src?.search?.header || "";
     if (/^@js:/i.test(h)) h = lgJs(h.slice(4), env); else if (/^<js>/i.test(h)) h = lgJs(h.replace(/^<js>|<\/js>$/gi, ""), env);
-    if (h) headers = typeof h === "object" ? h : lenientJSON(String(h));
+    if (h) headers = typeof h === "object" ? h : lgOpts(String(h));
   } catch (_) {}
   if (opts.headers && typeof opts.headers === "object") headers = { ...headers, ...opts.headers };
   if (body != null && method === "GET") method = "POST";
@@ -3647,13 +3664,13 @@ function lgImg(raw, base, src){
   raw = lgFirst(raw); if (!raw) return null;
   let u = raw, opt = {};
   const m = raw.match(/^(.*?),\s*(\{[\s\S]*\})\s*$/);
-  if (m) { try { opt = lenientJSON(m[2]) || {}; u = m[1]; } catch (_) {} }
+  if (m) { try { opt = lgOpts(m[2]) || {}; u = m[1]; } catch (_) {} }
   if (/^data:image/i.test(u)) return u;
   try { u = new URL(u.trim(), base).href; } catch (_) { return null; }
   if (!KT()) return u;   // browser preview: the plain address
   let h = {};
-  try { const sh = src?.search?.header; if (sh && !/^(@js:|<js>)/i.test(sh.trim())) h = lenientJSON(sh) || {}; } catch (_) {}
-  let oh = opt.headers; if (typeof oh === "string") { try { oh = lenientJSON(oh); } catch (_) { oh = {}; } }
+  try { const sh = src?.search?.header; if (sh && !/^(@js:|<js>)/i.test(sh.trim())) h = lgOpts(sh) || {}; } catch (_) {}
+  let oh = opt.headers; if (typeof oh === "string") { try { oh = lgOpts(oh); } catch (_) { oh = {}; } }
   h = { Referer: base, ...h, ...(oh || {}) };
   return "https://shelf-img.local/?u=" + encodeURIComponent(u) + "&h=" + encodeURIComponent(JSON.stringify(h));
 }
