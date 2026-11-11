@@ -2164,19 +2164,23 @@ async function importLinks(lines, btn, err){
   const all = [], problems = [];
   for (const [k, u] of lines.entries()) {
     const isFile = /\.(json|txt)(\?|#|$)/i.test(u) || /github(usercontent)?\.com|gist\./i.test(u);
-    let got = null, tried = [];
+    let got = null, tried = [], verify = "";
     for (const [label, url] of fileUrls(u)) {
       btn.textContent = `${lines.length > 1 ? `${k + 1}/${lines.length} · ` : ""}${label}…`;
       try {
-        const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 12000);
-        const res = await fetch(url, { signal: ctl.signal }); clearTimeout(t);
-        if (!res.ok) { tried.push([label, `HTTP ${res.status}`]); continue; }
-        const r = parseSourceFile(await res.text());
+        const native = !!window.ShelfNative?.request;   // in the app: the shell downloads it, and gets past a Cloudflare check on the link itself
+        const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), native ? 50000 : 12000);
+        let text;
+        if (native) text = (await lgNativeFetch({ url, method: "GET", headers: {} }, ctl.signal)).text;
+        else { const res = await fetch(url, { signal: ctl.signal }); if (!res.ok) { clearTimeout(t); tried.push([label, `HTTP ${res.status}`]); continue; } text = await res.text(); }
+        clearTimeout(t);
+        const r = parseSourceFile(text);
         if (r.list) { got = r.list; break; }
         tried.push([label, r.why, r.head]);
-      } catch (e) { tried.push([label, e.name === "AbortError" ? "超时" : "连不上"]); }
+      } catch (e) { verify = verify || verifyOf(e); tried.push([label, e.name === "AbortError" ? "超时" : e.net || /^HTTP/.test(e.message) ? e.message : "连不上"]); }
     }
     if (got) { all.push(...got); continue; }
+    if (verify) { problems.push([u, tried, verify]); continue; }
     if (!isFile) { all.push({ name: hostOf(u).replace(/^www\./, ""), url: u }); continue; }   // a plain site or catalogue address
     problems.push([u, tried]);
   }
@@ -2186,7 +2190,7 @@ async function importLinks(lines, btn, err){
       empty: "文件能读取，但里面没有书源（缺少 bookSourceUrl）" };
     const rows = problems[0][1].map(([label, why, head]) =>
       `<li><b>${esc(label)}</b>：${esc(WHY[why] || why)}${head ? `<br><code>开头：${esc(head)}${head.length >= 60 ? "…" : ""}</code>` : ""}</li>`).join("");
-    err.innerHTML = `没能导入这个书源文件，已尝试：<ul class="imp-why">${rows}</ul>${IN_APP ? "可以换一个链接，或先把文件存到手机，再用「本地导入」。" : "网页预览里不能联网，安装版可以直接导入；也可以先把文件存到手机，再用「本地导入」。"}`;
+    err.innerHTML = `没能导入这个书源文件，已尝试：<ul class="imp-why">${rows}</ul>${problems[0][2] ? `这个链接有人机验证：${vfBtn(problems[0][2])} 通过后回来点「重试」。<br>` : ""}${IN_APP ? "可以换一个链接，或先把文件存到手机，再用「本地导入」。" : "网页预览里不能联网，安装版可以直接导入；也可以先把文件存到手机，再用「本地导入」。"}`;
     return;
   }
   closeSheet(); addSources(all, problems.length);

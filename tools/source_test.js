@@ -27,6 +27,16 @@ const say = (...a) => { const t = a.join(" "); console.log(t); summary.push(t); 
     const r = await fetch(SRC, { headers: { "User-Agent": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/124.0 Mobile Safari/537.36" } });
     text = await r.text();
     say(`书源文件：${SRC}（HTTP ${r.status}，${text.length} 字）`);
+    if (/^\s*</.test(text)) {   // a web page instead of the file (often a Cloudflare check): let a real browser fetch it
+      const b = await chromium.launch({ args: ["--disable-blink-features=AutomationControlled"] });
+      const pg = await b.newPage({ userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36" });
+      await pg.goto(SRC, { waitUntil: "domcontentloaded", timeout: 60000 }).catch(() => {});
+      await pg.waitForFunction(() => /^\s*[\[{]/.test(document.body?.innerText || ""), null, { timeout: 45000 }).catch(() => {});
+      const got = await pg.evaluate(() => document.body?.innerText || "").catch(() => "");
+      await b.close();
+      if (/^\s*[\[{]/.test(got)) { text = got; say(`（链接有浏览器检查，改用浏览器取到了 ${text.length} 字）`); }
+      else say("（链接有浏览器检查，浏览器也没取到书源文件）");
+    }
   } else text = fs.readFileSync(SRC, "utf8");
   const file = path.join(OUT, "source.json");
   fs.writeFileSync(file, text);
