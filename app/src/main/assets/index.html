@@ -2026,6 +2026,7 @@ function sheetHome(){
       <button class="tile" type="button" data-add="file"><span class="ic">${ic.file}</span><b>本地导入</b><small>选择 .json 书源文件，可一次导入多个</small></button>
       <button class="tile" type="button" data-add="link"><span class="ic">${ic.link}</span><b>网络导入</b><small>粘贴书源或订阅地址</small></button>
       <button class="tile" type="button" data-add="qr"><span class="ic">${ic.qr}</span><b>扫码导入</b><small>扫描别人分享的书源二维码</small></button>
+      <button class="tile src-pack" type="button" data-add="novels"><span class="ic">${ic.file}</span><b>中文小说源</b><small>实测可用的 2 个：酷我小说、阅友小说（搜索、目录、正文都通，开着 VPN 也能用）</small></button>
       <button class="tile src-pack" type="button" data-add="kotatsu"><span class="ic">${ic.file}</span><b>Futon 漫画源</b><small>App 内置 Futon 的漫画解析库：约 1400 个漫画、条漫源（含漫画柜、包子漫画等中文源，中文源默认开启）</small></button>
       <button class="tile src-pack" type="button" data-add="futon"><span class="ic">${ic.file}</span><b>Futon 小说源</b><small>7 个英文轻小说源：Royal Road、FreeWebNovel、Scribble Hub 等</small></button>
     </div>
@@ -2070,6 +2071,7 @@ addSheet.addEventListener("click", e => {
   if (k === "new") { closeSheet(); toast("新建书源：规则编辑器下一步设计"); }
   if (k === "file") document.getElementById("srcFile").click();
   if (k === "futon") importBundled("sources/futon-novels.json");
+  if (k === "novels") importBundled("sources/novels-zh.json");
   if (k === "kotatsu") importKotatsu();
   if (k === "link") { sheetLink(); stagger([...addSheet.querySelectorAll(".urlform > *")], 0, 8); }
   if (k === "home") { sheetHome(); stagger([...addSheet.querySelectorAll(".tile")], 0, 10); }
@@ -3052,7 +3054,7 @@ function sxRender(){
       <button class="sx-open" type="button" data-open="${esc(b.t)}" data-a="${esc(b.a || "")}">
         <span class="sx-c">${b.cover ? `<img alt="" src="${esc(b.cover)}" loading="lazy" referrerpolicy="no-referrer">` : `<img alt="" src="${b.own != null ? coverOf(b.own).slice(5, -2) : recCover(b)}">`}</span>
         <span class="sx-i"><b>${mark(b.t, q)}</b>
-          <small>${mark(b.a || "佚名", q)}${b.cat ? " · " + esc(b.cat) : ""}${b.words ? ` · ${/字|万/.test(b.words) ? esc(b.words) : esc(b.words) + "万字"}` : ""}${b.status ? " · " + esc(b.status) : ""}</small>
+          <small>${mark(b.a || "佚名", q)}${b.cat ? " · " + esc(b.cat) : ""}${b.words ? ` · ${wordsText(b.words)}` : ""}${b.status ? " · " + esc(b.status) : ""}</small>
           ${b.syn ? `<span class="sx-syn">${esc(b.syn)}</span>` : ""}
           <span class="sx-meta">${b.own != null ? `<i class="sx-tag own">书架</i>` : ""}${b.remote ? `<i class="sx-tag live">${esc(b.remote)}</i>` : b.own == null ? `<i class="sx-tag">演示数据</i>` : ""}${b.sc ? `<i class="sx-sc">${b.sc.toFixed(1)} 分</i>` : ""}</span></span></button>
       ${b.own == null ? `<button class="want" type="button" data-want="${esc(b.t)}" aria-pressed="${wanted.has(b.t)}">${wanted.has(b.t) ? "✓ 已想读" : "＋ 想读"}</button>` : ""}</div>`;
@@ -3124,6 +3126,15 @@ async function opdsSearch(src, q, signal){
       cat: e.querySelector("category")?.getAttribute("label") || "OPDS", syn: sum.slice(0, 120),
       cover: img ? new URL(img.getAttribute("href"), url).href : null, remote: src.name };
   }).filter(x => x.t && !/^(next|previous|下一页|上一页)$/i.test(x.t));
+}
+/* word counts come as "298.6", "171.62 万字" or a plain character count like "2986351" */
+function wordsText(w){
+  w = String(w).trim();
+  if (/字|万/.test(w)) return esc(w);
+  const n = parseFloat(w);
+  if (/^\d+$/.test(w) && n >= 10000) return (n / 10000).toFixed(1) + "万字";
+  if (/^\d+$/.test(w) && n >= 1000) return n + "字";
+  return esc(w) + "万字";
 }
 /* ---------- real search: Legado (阅读) book sources — searchUrl + ruleSearch ----------
    Covers what search rules commonly use: GET / POST with charset (GBK keys), headers, {{key}} / {{page}} and JS in {{ }},

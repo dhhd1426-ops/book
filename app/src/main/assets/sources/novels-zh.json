@@ -1,0 +1,82 @@
+[
+  {
+    "bookSourceGroup": "中文小说 · 实测可用",
+    "bookSourceName": "酷我小说",
+    "bookSourceType": 0,
+    "bookSourceUrl": "http://appi.kuwo.cn",
+    "enabled": true,
+    "enabledCookieJar": true,
+    "header": "{\n\t\"Accept\": \"*/*\",\n\t\"Connection\": \"Close\",\n\t\"User-Agent\": \"Dalvik/2.1.0 (Linux; U; Android 8.0.0; LND-AL40 Build/HONORLND-AL40)\"\n}",
+    "ruleBookInfo": {
+      "author": "$.author_name",
+      "coverUrl": "$.cover_url",
+      "init": "$.data",
+      "intro": "$.intro##(^|[。！？]+[”」）】]?)##$1<br>",
+      "kind": "{{$.category_name}},{{$.status}},{{$.update_time}}@js:result.replace(/30/,\"连载\").replace(/50/,\"完结\").replace(/\\s..:.*/,\"\")",
+      "lastChapter": "$.new_chapter_name##正文卷.|正文.|VIP卷.|默认卷.|卷_|VIP章节.|免费章节.|章节目录.|最新章节.|[\\(（【].*?[求更票谢乐发订合补加架字修Kk].*?[】）\\)]",
+      "name": "$.title",
+      "tocUrl": "/novels/api/book/{{$.book_id}}/chapters?paging=0",
+      "wordCount": "$.all_words"
+    },
+    "ruleContent": {
+      "content": "$.data.content"
+    },
+    "ruleSearch": {
+      "author": "$.author_name",
+      "bookList": "$.data",
+      "bookUrl": "/novels/api/book/{{$.book_id}}",
+      "coverUrl": "$.cover_url",
+      "intro": "$.intro",
+      "kind": "{{$.category_name}},{{$.status}}@js:result.replace(/30/,\"连载\").replace(/50/,\"完结\")",
+      "name": "$.title",
+      "wordCount": "$.all_words"
+    },
+    "ruleToc": {
+      "chapterList": "$.data",
+      "chapterName": "$.chapter_title##正文卷.|正文.|VIP卷.|默认卷.|卷_|VIP章节.|免费章节.|章节目录.|最新章节.|[\\(（【].*?[求更票谢乐发订合补加架字修Kk].*?[】）\\)]",
+      "chapterUrl": "/novels/api/book/{{$.book_id}}/chapters/{{$.chapter_id}}",
+      "updateTime": "{{$.volume_name}}•{{$.original_words}}字"
+    },
+    "searchUrl": "/novels/api/book/search?keyword={{key}}&pi={{page}}&ps=30",
+    "bookSourceComment": "规则来自 XIU2/Yuedu 书源合集（GPL-3.0）。2026-11 用真实网络实测：搜索、详情、目录、正文都正常，海外网络也能访问。"
+  },
+  {
+    "bookSourceComment": "规则来自 XIU2/Yuedu 书源合集（GPL-3.0）。2026-11 用真实网络实测：搜索、详情、目录、正文都正常，海外网络也能访问。",
+    "bookSourceName": "阅友小说",
+    "bookSourceType": 0,
+    "bookSourceUrl": "http://m.suixkan.com",
+    "enabled": true,
+    "enabledCookieJar": true,
+    "ruleBookInfo": {
+      "author": ".face-info span.0@text##.*：",
+      "coverUrl": ".face-cover img@src",
+      "intro": "#intro@html",
+      "kind": ".face-info span.1:3@text&&#idNewIds@#chapter-ps-id@text##.*：",
+      "lastChapter": "#idNewIds@.chapter-entrance@text",
+      "name": ".face-info-title@text",
+      "tocUrl": ".sumchapter a@href",
+      "wordCount": ".face-info span.2@text##.*："
+    },
+    "ruleContent": {
+      "content": ".con@html",
+      "replaceRegex": "##[\\(（]本章未完.*[）\\)]|[\\(（]本章完[）\\)]"
+    },
+    "ruleSearch": {
+      "author": ".v-author@text##\\s",
+      "bookList": ".v-list-item",
+      "bookUrl": "@onclick@js:result.match(/\\('(.*?)', '', ''\\)/)[1]",
+      "coverUrl": "img@src",
+      "intro": ".v-intro@text",
+      "kind": ".base-label@text",
+      "name": ".v-title@text",
+      "wordCount": ".v-words@text"
+    },
+    "ruleToc": {
+      "chapterList": ".catalog_ls li a",
+      "chapterName": "text",
+      "chapterUrl": "href"
+    },
+    "searchUrl": "/s/1.html?keyword={{key}}&page={{page}}",
+    "bookSourceGroup": "中文小说 · 实测可用"
+  }
+]
