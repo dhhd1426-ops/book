@@ -3382,8 +3382,11 @@ function lgStep(el, step){
   }
   return idx == null ? found : lgPickIdx(found, idx, excl, ranged);
 }
+let lgKeepLines = false;   // on while a chapter's content rule runs
 function lgAttr(els, a){
   els = els.map(e => e.nodeType === 9 ? e.documentElement : e).filter(Boolean);
+  /* chapter text keeps its paragraphs (<br>, <p>) even when the rule says @text, which would give one long line */
+  if (a === "text" && lgKeepLines) return els.map(e => lgPlain(e.innerHTML ?? e.textContent)).filter(Boolean);
   if (a === "text") return els.map(e => e.textContent.replace(/\s+/g, " ").trim()).filter(Boolean);
   if (a === "ownText") return els.map(e => lgOwnText(e).join(" ")).filter(Boolean);
   if (a === "textNodes") return els.map(e => lgOwnText(e).join("\n")).filter(Boolean);
@@ -3655,7 +3658,11 @@ async function lgFetch(req, signal){
   let text; try { text = new TextDecoder(cs || "utf-8").decode(buf); } catch (_) { text = new TextDecoder().decode(buf); }
   return { text, url: r.url || req.url };
 }
-async function legadoSearch(src, q, signal){
+/* a wait that ends early (with an error) when the search is cancelled */
+const lgSleep = (ms, signal) => new Promise((ok, fail) => { const t = setTimeout(ok, ms);
+  signal?.addEventListener("abort", () => { clearTimeout(t); fail(Object.assign(new Error("超时"), { name: "AbortError" })); }); });
+/* more(ms): asks the caller for that much extra time before it gives up on this source */
+async function legadoSearch(src, q, signal, more, again){
   const s = src.search, req = lgRequest(src, q);
   const res = await (req.webView && window.ShelfNative?.render ? lgRender(req, signal) : lgFetch(req, signal)).catch(e => { throw Object.assign(e, { url: req.url }); });
   const env = { key: q, page: 1, baseUrl: res.url, source: lgSource(src), src: res.text };
@@ -3676,6 +3683,16 @@ async function legadoSearch(src, q, signal){
   /* what came back, so an empty result can say why */
   list.diag = { url: req.url, head: res.text.replace(/\s+/g, " ").trim().slice(0, 240), kind: root instanceof Node ? "网页" : root && typeof root === "object" ? "JSON" : "文本",
     items: items.length, err };
+  /* many sites allow one search every N seconds and answer "搜索间隔15秒" in between: wait it out and search once more */
+  if (!list.length && !again) {
+    const m = res.text.slice(0, 4000).match(/搜索间隔\s*(\d+)\s*秒|(\d+)\s*秒[^<'"\n]{0,10}(?:后|内)[^<'"\n]{0,10}搜索|搜索[^<'"\n]{0,10}?(\d+)\s*秒/);
+    if (m) {
+      const wait = (Math.min(+(m[1] || m[2] || m[3]) || 15, 40) + 1) * 1000;
+      more?.(wait);
+      await lgSleep(wait, signal);
+      return legadoSearch(src, q, signal, more, true);
+    }
+  }
   return list;
 }
 /* ---------- Futon 漫画源: kotatsu-parsers running in the Android shell (Parsers.kt) ---------- */
@@ -3826,7 +3843,7 @@ async function lgChapter(b, n){
     lgUseVars(b.lg.vars);
     const env = { source: lgSource(src), baseUrl: page.url, src: page.text, book: lgBookVar(b), chapter: { title: ch.name, url: ch.url, index: n - 1 } };
     let body = /<js>|@js:/i.test(C.content) ? page.text : lgCtx(page.text);
-    let got = lgStr(body, C.content, env);
+    let got; lgKeepLines = true; try { got = lgStr(body, C.content, env); } finally { lgKeepLines = false; }
     parts.push(got);
     if (src.type === "漫画") {
       if (C.replaceRegex) { const [, re, rp = ""] = lgSplit(C.replaceRegex.trim().replace(/^(?!##)/, "##"), "##"); if (re) got = lgReplace(String(got), re, rp, false); }
@@ -3859,8 +3876,10 @@ function runSources(q){
   let next = 0;
   const work = () => {   // a few at a time: an imported file can hold hundreds of sources
     if (run !== sxState.run || next >= searchable.length) return;
-    const s = searchable[next++], ctl = new AbortController(), t = setTimeout(() => ctl.abort(), window.ShelfNative?.request ? 45000 : 15000);
-    (s.kt ? ktSearch : s.search ? legadoSearch : opdsSearch)(s, q, ctl.signal).then(list => {
+    const s = searchable[next++], ctl = new AbortController(), limit = window.ShelfNative?.request ? 45000 : 15000;
+    let t = setTimeout(() => ctl.abort(), limit);
+    const more = ms => { clearTimeout(t); t = setTimeout(() => ctl.abort(), ms + limit); };   // a source waiting out a search interval
+    (s.kt ? ktSearch : s.search ? legadoSearch : opdsSearch)(s, q, ctl.signal, more).then(list => {
       if (run !== sxState.run) return;
       st.src.push(...list.slice(0, 20)); if (list.length) ok.push(s.name); else if (list.diag) st.empty[s.name] = list.diag;
     }).catch(e => { if (run === sxState.run) { st.fail.push(s.name); st.why[s.name] = whyFail(e); if (e?.url) st.failUrl[s.name] = e.url; const v = verifyOf(e); if (v) st.verify[s.name] = v; } })
