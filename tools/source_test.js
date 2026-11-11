@@ -47,6 +47,11 @@ const say = (...a) => { const t = a.join(" "); console.log(t); summary.push(t); 
   await page.emulateMedia({ reducedMotion: "reduce" });
   const errors = []; page.on("pageerror", e => errors.push(e.message));
   await page.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());   // not needed for the test
+  // every request a source makes, for the log (pictures left out)
+  let net = [];
+  page.on("response", r => { const q = r.request(); if (!/^https?:/.test(q.url()) || q.resourceType() === "image") return;
+    net.push(`${q.method()} ${q.url().slice(0, 200)} → ${r.status()}${q.postData() ? "  body=" + q.postData().slice(0, 120) : ""}`); });
+  page.on("requestfailed", q => { if (/^https?:/.test(q.url()) && q.resourceType() !== "image") net.push(`${q.method()} ${q.url().slice(0, 200)} → 失败 ${q.failure()?.errorText || ""}`); });
   await page.goto("file://" + PAGE);
   await page.evaluate(() => localStorage.setItem("shelf-sources", "[]")); await page.reload(); await page.waitForTimeout(500);
 
@@ -89,7 +94,9 @@ const say = (...a) => { const t = a.join(" "); console.log(t); summary.push(t); 
     say(`\n## ${src.name}（${src.type}）· 搜「${key}」`);
     if (!src.rule) { say("  ❌ 没有搜索规则"); bad++; continue; }
     await enable([src.id]);
+    net = [];
     await search(key, 60000);
+    if (!screen) console.log("  请求：\n    " + net.slice(0, 12).join("\n    "));
     const shot = n => page.screenshot({ path: path.join(OUT, `${src.name.replace(/[\\/:*?"<>|\s]/g, "_")}-${n}.png`) }).catch(() => {});
     await shot("1-search");
     const hits = await rows();
